@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import api from '../config/axios.config';
+import FNG from '../components/FNG';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 function Dashboard() {
   const [dashboardData, setDashboardData] = useState(null);
@@ -37,6 +39,9 @@ function Dashboard() {
           New Simulation
         </button>
       </div>
+
+      <FNG />
+      <LoadingSpinner />
 
       {dashboardData?.recentSimulations?.map(simulation => (
         <div

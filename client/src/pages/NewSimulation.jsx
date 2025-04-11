@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { Cpu, ArrowRight, DollarSign, Briefcase, Home, MapPin, TrendingUp, ShoppingBag, Plus, ChevronLeft } from 'lucide-react';
-import api from '../config/axios.config.js';
+import { toast } from 'react-toastify';
+import { financialService } from "../services/financial.service.js";
+import { simulationService } from "../services/simulation.service.js";
 
 function NewSimulation() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    // Current Financial Life
+
     income: '',
     savings: '',
     expenses: [
@@ -30,130 +32,144 @@ function NewSimulation() {
       { name: '', value: '', purchaseDate: new Date() }
     ],
 
-    // Future Scenario
-    scenario: 'job',
-    timeline: '12', // months
 
-    // Job scenario
+    scenario: 'job',
+    timeline: '12',
+
+
     newSalary: '',
 
-    // Investment scenario
+
     investmentAmount: '',
     annualReturnRate: '10',
 
-    // Purchase scenario
+
     purchaseCost: '',
 
-    // City scenario (not in backend but keeping for UI)
+
     newCity: '',
     cityDetails: {
       expectedRent: '',
       costOfLiving: ''
     },
 
-    // Business scenario (not in backend but keeping for UI)
+
     businessInvestment: '',
     businessType: '',
 
-    // Asset scenario
+
     assetValue: '',
     assetType: '',
   });
 
+  const [loading, setLoading] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     try {
+      setLoading(true); // Set loading state to true when submission starts
       const userId = localStorage.getItem('userId');
-
-      // Prepare expenses data - filter out empty amounts
-      const expenses = formData.expenses
-        .filter(expense => expense.amount.trim() !== '')
-        .map(expense => ({
-          category: expense.category,
-          amount: Number(expense.amount),
-          frequency: expense.frequency,
-          date: expense.date
-        }));
-
-      // Prepare investments data - filter out empty amounts
-      const investments = formData.investments
-        .filter(investment => investment.amount.trim() !== '')
-        .map(investment => ({
-          type: investment.type,
-          amount: Number(investment.amount),
-          returnRate: Number(investment.returnRate),
-          startDate: investment.startDate
-        }));
-
-      // Prepare assets data - filter out empty names and values
-      const assets = formData.assets
-        .filter(asset => asset.name.trim() !== '' && asset.value.trim() !== '')
-        .map(asset => ({
-          name: asset.name,
-          value: Number(asset.value),
-          purchaseDate: asset.purchaseDate
-        }));
-
-      // First create/update financial data
+  
+      if (!userId) {
+        toast.error("Please login to create a simulation");
+        navigate("/login");
+        return;
+      }
+  
+      // Show a toast notification that simulation is being created
+      toast.info("Creating your financial simulation...");
+  
       const financialData = {
         income: Number(formData.income) || 0,
         savings: Number(formData.savings) || 0,
-        expenses,
-        investments,
-        assets
+        expenses: formData.expenses
+          .filter(expense => expense.amount.trim() !== '')
+          .map(expense => ({
+            category: expense.category,
+            amount: Number(expense.amount),
+            frequency: expense.frequency,
+            date: expense.date
+          })),
+        investments: formData.investments
+          .filter(investment => investment.amount.trim() !== '')
+          .map(investment => ({
+            type: investment.type,
+            amount: Number(investment.amount),
+            returnRate: Number(investment.returnRate),
+            startDate: investment.startDate
+          })),
+        assets: formData.assets
+          .filter(asset => asset.name.trim() !== '' && asset.value.trim() !== '')
+          .map(asset => ({
+            name: asset.name,
+            value: Number(asset.value),
+            purchaseDate: asset.purchaseDate
+          }))
       };
-
-      await api.put(`/financial/${userId}`, financialData);
-
-      // Prepare scenario details based on selected scenario
-      const details = {};
+  
+      await financialService.updateFinancialData(userId, financialData);
+  
+  
+      let details = {};
       switch (formData.scenario) {
         case 'job':
-          details.newSalary = Number(formData.newSalary) || 0;
+          details = { newSalary: Number(formData.newSalary) || 0 };
           break;
         case 'investment':
-          details.investmentAmount = Number(formData.investmentAmount) || 0;
-          details.annualReturnRate = Number(formData.annualReturnRate) || 0;
+          details = {
+            investmentAmount: Number(formData.investmentAmount) || 0,
+            annualReturnRate: Number(formData.annualReturnRate) || 10
+          };
           break;
         case 'purchase':
-          details.purchaseCost = Number(formData.purchaseCost) || 0;
+          details = { purchaseCost: Number(formData.purchaseCost) || 0 };
+          break;
+        case 'city':
+          details = {
+            newCity: formData.newCity,
+            expectedRent: Number(formData.cityDetails.expectedRent) || 0,
+            costOfLiving: Number(formData.cityDetails.costOfLiving) || 0
+          };
+          break;
+        case 'business':
+          details = {
+            investment: Number(formData.businessInvestment) || 0,
+            type: formData.businessType
+          };
+          break;
+        case 'asset':
+          details = {
+            purchaseCost: Number(formData.assetValue) || 0,
+            assetType: formData.assetType
+          };
           break;
         default:
-          // For UI scenarios not explicitly in backend
-          details.type = formData.scenario;
-          if (formData.scenario === 'city') {
-            details.newCity = formData.newCity;
-            details.expectedRent = Number(formData.cityDetails.expectedRent) || 0;
-            details.costOfLiving = Number(formData.cityDetails.costOfLiving) || 0;
-          } else if (formData.scenario === 'business') {
-            details.investment = Number(formData.businessInvestment) || 0;
-            details.type = formData.businessType;
-          } else if (formData.scenario === 'asset') {
-            details.value = Number(formData.assetValue) || 0;
-            details.type = formData.assetType;
-          }
+          break;
       }
-
-      // Now create the simulation
+  
+  
       const simulationData = {
-        userId,
         futureState: [{
           type: formData.scenario,
           timeline: Number(formData.timeline) || 12,
           details
         }]
       };
-
-      const response = await api.post(`/simulations/${userId}`, simulationData);
-      if (response.data) {
-        navigate('/results', { state: { simulationId: response.data._id } });
-      }
+  
+      const response = await simulationService.createSimulation(userId, simulationData);
+  
+      toast.success("Simulation created successfully!");
+      navigate("/results", { state: { simulationId: response._id } });
     } catch (err) {
-      console.error('Simulation error:', err.response?.data || err.message);
+      console.error("Simulation error:", err);
+      toast.error(err.message || "Failed to create simulation");
+    } finally {
+      setLoading(false); // Always reset loading state when done
     }
   };
 
-  // Helper function to update expense values
+
   const updateExpense = (index, field, value) => {
     const updatedExpenses = [...formData.expenses];
     updatedExpenses[index] = {
@@ -166,7 +182,7 @@ function NewSimulation() {
     });
   };
 
-  // Helper function to update investment values
+
   const updateInvestment = (index, field, value) => {
     const updatedInvestments = [...formData.investments];
     updatedInvestments[index] = {
@@ -179,7 +195,7 @@ function NewSimulation() {
     });
   };
 
-  // Helper function to update asset values
+
   const updateAsset = (index, field, value) => {
     const updatedAssets = [...formData.assets];
     updatedAssets[index] = {
@@ -192,7 +208,7 @@ function NewSimulation() {
     });
   };
 
-  // Add a new empty asset field
+
   const addAsset = () => {
     setFormData({
       ...formData,
@@ -203,7 +219,7 @@ function NewSimulation() {
     });
   };
 
-  // Icons for different scenarios
+
   const scenarioIcons = {
     job: <Briefcase className="h-6 w-6" />,
     investment: <TrendingUp className="h-6 w-6" />,
@@ -213,7 +229,7 @@ function NewSimulation() {
     asset: <Home className="h-6 w-6" />
   };
 
-  // Get step title for header
+
   const getStepTitle = () => {
     if (step === 1) return "Your Current Financial Profile";
     if (step === 2) return "Explore Your Financial Future";
@@ -252,18 +268,16 @@ function NewSimulation() {
             {[1, 2].map((stepNumber) => (
               <div key={stepNumber} className="flex flex-col items-center">
                 <div
-                  className={`h-12 w-12 rounded-full flex items-center justify-center font-bold text-lg ${
-                    step === stepNumber
+                  className={`h-12 w-12 rounded-full flex items-center justify-center font-bold text-lg ${step === stepNumber
                       ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
                       : 'bg-gray-700 text-gray-400'
-                  }`}
+                    }`}
                 >
                   {stepNumber}
                 </div>
                 <span
-                  className={`mt-2 text-sm ${
-                    step === stepNumber ? 'text-white' : 'text-gray-400'
-                  }`}
+                  className={`mt-2 text-sm ${step === stepNumber ? 'text-white' : 'text-gray-400'
+                    }`}
                 >
                   {stepNumber === 1 ? 'Current Financial Life' : 'Future Changes'}
                 </span>
@@ -300,7 +314,7 @@ function NewSimulation() {
             className="bg-black/20 backdrop-blur-xl rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] border border-gray-800/50 overflow-hidden p-6 md:p-8"
           >
             {step === 1 ? (
-              // Step 1: Current Financial Life
+
               <div className="space-y-6">
                 {/* Income Section */}
                 <div className="bg-gray-900/40 backdrop-blur-sm p-5 rounded-xl border border-gray-800/50">
@@ -453,7 +467,7 @@ function NewSimulation() {
                 </motion.button>
               </div>
             ) : (
-              // Step 2: Future Changes
+
               <div className="space-y-6">
                 {/* Scenario Selection */}
                 <div className="bg-gray-900/40 backdrop-blur-sm p-5 rounded-xl border border-gray-800/50">
@@ -474,8 +488,8 @@ function NewSimulation() {
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setFormData({ ...formData, scenario: scenario.value })}
                         className={`cursor-pointer rounded-xl border ${formData.scenario === scenario.value ?
-                            `bg-gradient-to-br ${scenario.color} border-transparent` :
-                            'bg-gray-800/70 border-gray-700 hover:border-gray-600'
+                          `bg-gradient-to-br ${scenario.color} border-transparent` :
+                          'bg-gray-800/70 border-gray-700 hover:border-gray-600'
                           } p-4 flex flex-col items-center justify-center transition-all`}
                       >
                         <div className={`p-2 rounded-lg ${formData.scenario === scenario.value ? 'bg-white/20' : 'bg-gray-700'} mb-2`}>
@@ -742,15 +756,27 @@ function NewSimulation() {
                     <ChevronLeft className="mr-2 h-5 w-5" />
                     Back
                   </motion.button>
-
                   <motion.button
                     type="submit"
                     className="w-1/2 py-3 px-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg text-white font-semibold flex items-center justify-center"
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
+                    whileHover={{ scale: loading ? 1 : 1.01 }}
+                    whileTap={{ scale: loading ? 1 : 0.99 }}
+                    disabled={loading}
                   >
-                    Create Simulation
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                    {loading ? (
+                      <div className="flex items-center justify-center">
+                        <svg className="animate-spin h-5 w-5 text-white mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Creating Simulation...</span>
+                      </div>
+                    ) : (
+                      <>
+                        Create Simulation
+                        <ArrowRight className="ml-2 h-5 w-5" />
+                      </>
+                    )}
                   </motion.button>
                 </div>
               </div>

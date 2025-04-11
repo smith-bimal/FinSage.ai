@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Layout from './components/Layout';
 import ResultsPage from './pages/ResultsPage';
 import SimulationWizard from './pages/SimulationWizard';
+import LandingPage from './pages/LandingPage';
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -13,14 +14,16 @@ const PrivateRoute = ({ children }) => {
 
 function App() {
   return (
+    
     <Routes>
+      <Route path="/landingPage" element={<LandingPage />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+      {/* <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}> */}
         <Route index element={<Navigate to="/dashboard" />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="new-simulation" element={<SimulationWizard />} />
         <Route path="results/:simulationId" element={<ResultsPage />} />
-      </Route>
+      {/* </Route> */}
     </Routes>
   );
 }

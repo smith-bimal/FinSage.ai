@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router";
+import ChatBot from "../pages/ChatBot.jsx";
 
 const LandingPage = () => {
   const [scrollY, setScrollY] = useState(0);
@@ -896,6 +897,7 @@ const LandingPage = () => {
             </div>
           </div>
         </div>
+        <ChatBot/>
       </footer>
     </motion.div>
   );

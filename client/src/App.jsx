@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Layout from './components/Layout';
 import ResultsPage from './pages/ResultsPage';
 import LandingPage from './pages/LandingPage';
+import History from './pages/History';
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -18,6 +19,7 @@ function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login />} />
       {/* <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}> */}
+      <Route path="/history" element={<History />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/new-simulation" element={<NewSimulation />} />
       <Route path="/results/:simulationId" element={<ResultsPage />} />

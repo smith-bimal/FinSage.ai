@@ -1,13 +1,18 @@
 import express from 'express';
-import { createSimulation, getSimulationResults, getSimulationProjections, analyzeScenario, analyzeHistoricalDecisions } from '../controllers/simulation.controller.js';
-import { authenticateToken } from '../middlewares/auth.middleware.js';
+import {
+    createSimulation,
+    getSimulations,
+    updateSimulation,
+    deleteSimulation,
+    getSimulationWithBehavior
+} from '../controllers/simulation.controller.js';
 
 const router = express.Router();
 
-router.post('/:userId', authenticateToken, createSimulation);
-router.get('/:simulationId/results', authenticateToken, getSimulationResults);
-router.post('/:userId/projections', authenticateToken, getSimulationProjections);
-router.post('/:userId/scenario', authenticateToken, analyzeScenario);
-router.post('/:userId/retrospective', authenticateToken, analyzeHistoricalDecisions);
+router.post('/:userId', createSimulation);
+router.get('/:userId', getSimulations);
+router.get('/:userId/behavior', getSimulationWithBehavior);
+router.put('/:id', updateSimulation);
+router.delete('/:id', deleteSimulation);
 
 export default router;

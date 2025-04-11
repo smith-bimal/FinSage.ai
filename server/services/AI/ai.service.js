@@ -1,212 +1,216 @@
-import { GoogleGenAI } from '@google/genai';
+import { config } from 'dotenv';
+config("../../.env");
 import { Financial } from '../../models/financial.model.js';
 import Simulation from '../../models/simulation.model.js';
+import { FinancialHistory } from '../../models/financial.history.model.js';
 import { calculateSpendingTrends } from '../../utils/behavior.helper.js';
-import { analyzeInvestmentScenario, analyzeJobScenario, analyzePurchaseScenario } from '../../utils/scenario.helper.js';
+import { generateAIContent } from '../../helpers/gemini.helper.js';
 
-// Initialize Google GenAI with safety settings
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+export async function generateGeminiRecommendations(userId) {
+  try {
+    const financialData = await Financial.findOne({ userId });
+    if (!financialData) {
+      throw new Error('Financial data not found');
+    }
 
-export class AIService {
-    static async generateRecommendations(userId) {
-        try {
-            const financialData = await Financial.findOne({ userId });
-            if (!financialData) {
-                throw new Error('Financial data not found');
+    const spendingTrends = calculateSpendingTrends(financialData.expenses);
+    const monthlyIncome = Number(financialData.income) || 0;
+    const currentSavings = Number(financialData.savings) || 0;
+    
+    // Add investment calculations
+    const investments = financialData.investments || [];
+    const totalInvestments = investments.reduce((total, inv) => total + Number(inv.amount), 0);
+    const investmentReturns = investments.map(inv => ({
+      type: inv.type,
+      amount: Number(inv.amount),
+      expectedReturn: getExpectedReturn(inv.type)
+    }));
+
+    const prompt = `
+      Given the following financial data:
+      Monthly Income: ${monthlyIncome}
+      Current Savings: ${currentSavings}
+      Expenses: ${JSON.stringify(spendingTrends)}
+      Current Investments: ${JSON.stringify(investmentReturns)}
+      Total Investment Value: ${totalInvestments}
+
+      Consider these investment return rates:
+      - Stocks: 12% annual return
+      - Mutual Funds: 10% annual return
+      - Fixed Deposits: 7% annual return
+      - Others: 8% annual return
+
+      Generate a comprehensive financial analysis in this exact JSON structure:
+      {
+        "recommendations": [{
+          "category": "Expense Optimization" | "Investment Strategy" | "Savings Targets" | "Risk Management" | "Future Financial Planning",
+          "action": string,
+          "rationale": string,
+          "confidenceScore": number between 0-100,
+          "potentialImpact": {
+            "monthly": number,
+            "yearly": number
+          }
+        }],
+        "behaviorAnalysis": {
+          "spendingPatterns": {
+            "categories": [{
+              "name": string,
+              "monthlyAverage": number,
+              "trend": string
+            }]
+          },
+          "savingsBehavior": {
+            "consistency": string,
+            "averageSavingsRate": number,
+            "incomeVsExpenses": {
+              "monthlyIncome": number,
+              "totalMonthlyExpenses": number,
+              "savingsPotential": number
             }
-
-            const totalExpenses = financialData.expenses.reduce((sum, exp) => sum + exp.amount, 0);
-            const savingsRate = ((financialData.income - totalExpenses) / financialData.income * 100).toFixed(2);
-
-            const prompt = `
-                As an expert financial advisor, analyze this financial profile:
-                
-                Monthly Income: ₹${financialData.income.toLocaleString('en-IN')}
-                Total Monthly Expenses: ₹${totalExpenses.toLocaleString('en-IN')}
-                Current Savings: ₹${financialData.savings.toLocaleString('en-IN')}
-                Savings Rate: ${savingsRate}%
-                Expense Breakdown: ${JSON.stringify(financialData.expenses, null, 2)}
-                Investments: ${JSON.stringify(financialData.investments, null, 2)}
-
-                Provide 5 specific, actionable recommendations addressing:
-                1. Expense optimization
-                2. Investment strategy
-                3. Savings targets
-                4. Risk management
-                5. Future financial planning
-
-                Include confidence scores for each recommendation.
-            `;
-
-            const response = await genAI.models.generateContent({
-                model: "gemini-2.0-flash",
-                contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            });
-
-            console.log(response);
-
-            const recommendations = response.text;
-
-            return recommendations;
-        } catch (error) {
-            console.error('AI Recommendation Error:', error);
-            throw new Error(`Failed to generate recommendations: ${error.message}`);
-        }
-    }
-
-    static async analyzeBehavior(userId) {
-        try {
-            const financialData = await Financial.findOne({ userId });
-            if (!financialData) {
-                throw new Error('Financial data not found');
+          }
+        },
+        "chartData": {
+          "expenseBreakdown": [{
+            "category": string,
+            "amount": number
+          }],
+          "incomeVsExpenses": [{
+            "label": string,
+            "amount": number
+          }],
+          "savingsProgress": [{
+            "month": string in YYYY-MM-DD format,
+            "amount": number
+          }],
+          "projections": {
+            "shortTerm": {
+              "timestamps": array of 12 strings in YYYY-MM-DD format,
+              "actualValues": array of 12 numbers (include both savings and investment returns),
+              "recommendedValues": array of 12 numbers (suggest optimal saving and investment allocation)
+            },
+            "longTerm": {
+              "timestamps": array of 10 strings in YYYY-MM-DD format,
+              "actualValues": array of 10 numbers (include compound growth from investments),
+              "recommendedValues": array of 10 numbers (show potential with optimized investment strategy)
             }
-
-            // Calculate spending trends
-            const spendingTrends = calculateSpendingTrends(financialData.expenses);
-
-            // Generate AI-powered insights
-            const prompt = `
-                Analyze these spending patterns:
-                ${JSON.stringify(spendingTrends, null, 2)}
-
-                Provide:
-                1. Key spending categories
-                2. Spending anomalies or spikes
-                3. Behavioral insights
-                4. Specific recommendations to optimize spending
-            `;
-
-            const response = await genAI.models.generateContent({
-                model: "gemini-2.0-flash",
-                contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            });
-
-            return {
-                spendingTrends,
-                aiInsights: response.text
-            };
-        } catch (error) {
-            console.error('Behavior Analysis Error:', error);
-            throw new Error(`Failed to analyze behavior: ${error.message}`);
+          }
         }
-    }
+      }
 
-    static async analyzeHistoricalImpact(userId, startDate) {
-        try {
-            const simulations = await Simulation.find({
-                userId,
-                createdAt: { $gte: new Date(startDate) }
-            });
+      Ensure projections factor in:
+      1. Current investment portfolio returns
+      2. Compound growth over time
+      3. Risk-adjusted returns
+      4. Optimal investment allocation
+      
+      Follow the schema structure precisely while incorporating investment growth calculations.`;
 
-            const prompt = `
-                Analyze these financial decisions:
-                ${JSON.stringify(simulations.map(sim => ({
-                date: sim.createdAt,
-                scenario: sim.futureState,
-                outcome: sim.results
-            })))}
-                
-                Provide:
-                1. Decision impact analysis
-                2. Missed opportunities
-                3. Future recommendations
-            `;
-
-            const response = await genAI.models.generateContent({
-                model: "gemini-2.0-flash",
-                contents: prompt
-            });
-
-            console.log(response)
-            return response.text;
-        } catch (error) {
-            console.error('Historical Analysis Error:', error);
-            throw new Error('Failed to analyze historical impact');
-        }
-    }
-
-    static async analyzeSimulationScenarios(simulations) {
-        try {
-            const prompt = `
-                Analyze these financial simulation scenarios:
-                ${JSON.stringify(simulations.map(sim => ({
-                type: sim.futureState?.[0]?.type,
-                timeline: sim.futureState?.[0]?.timeline,
-                projections: sim.results?.projections
-            })))}
-
-                Provide:
-                1. Pattern analysis of chosen scenarios
-                2. Success probability of each scenario
-                3. Risk assessment
-                4. Alternative suggestions
-            `;
-
-            const response = await genAI.models.generateContent({
-                model: "gemini-2.0-flash",
-                contents: prompt
-            });
-
-            console.log(response)
-            return response.text;
-        } catch (error) {
-            console.error('Simulation Analysis Error:', error);
-            throw new Error('Failed to analyze simulation scenarios');
-        }
-    }
+    const response = await generateAIContent(prompt);
+    return JSON.parse(response.replace("```json", "").replace("```", ""));
+  } catch (error) {
+    console.error('Error generating AI recommendations:', error);
+    throw new Error('Failed to generate AI recommendations');
+  }
 }
 
-export const analyzeScenario = async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const { scenarioType, details } = req.body;
+// Helper function to get expected return rates
+function getExpectedReturn(investmentType) {
+  const returnRates = {
+    stocks: 0.12,
+    mutualFunds: 0.10,
+    fixedDeposits: 0.07,
+    others: 0.08
+  };
+  return returnRates[investmentType.toLowerCase()] || returnRates.others;
+}
 
-        const financialData = await Financial.findOne({ userId });
-        if (!financialData) {
-            return res.status(404).json({ message: 'Financial data not found' });
-        }
-
-        let analysis = {};
-
-        switch (scenarioType) {
-            case 'job':
-                analysis = analyzeJobScenario(financialData, details);
-                break;
-            case 'investment':
-                analysis = analyzeInvestmentScenario(financialData, details);
-                break;
-            case 'purchase':
-                analysis = analyzePurchaseScenario(financialData, details);
-                break;
-            default:
-                return res.status(400).json({ message: 'Invalid scenario type' });
-        }
-
-        // Generate AI insights
-        const aiInsights = await AIService.generateRecommendations(userId);
-
-        // Update simulation results
-        const simulation = await Simulation.findOneAndUpdate(
-            { userId },
-            {
-                $set: {
-                    results: {
-                        projections: analysis.projectedSavings || [],
-                        recommendations: aiInsights
-                    }
-                }
-            },
-            { new: true }
-        );
-
-        res.json({
-            scenarioType,
-            analysis,
-            aiInsights,
-            simulation
-        });
-    } catch (error) {
-        console.error('Error analyzing scenario:', error);
-        res.status(500).json({ message: error.message });
+export async function analyzeBehaviorGemini(userId) {
+  try {
+    const financialData = await Financial.findOne({ userId });
+    if (!financialData) {
+      throw new Error('Financial data not found');
     }
-};
+
+    const spendingTrends = calculateSpendingTrends(financialData.expenses);
+    const monthlyIncome = Number(financialData.income) || 0;
+    const currentSavings = Number(financialData.savings) || 0;
+    const totalInvestments = (financialData.investments || [])
+      .reduce((sum, inv) => sum + Number(inv.amount), 0);
+    const totalExpenses = Object.values(spendingTrends)
+      .reduce((sum, exp) => sum + Number(exp), 0);
+
+    // Ensure a simulation exists
+    let simulation = await Simulation.findOne({ userId }).sort({ createdAt: -1 });
+    if (!simulation) {
+      simulation = new Simulation({
+        userId,
+        recommendations: [], // Initialize with empty recommendations
+        behaviorAnalysis: {}, // Initialize with empty behavior analysis
+        chartData: {} // Initialize with empty chart data
+      });
+      await simulation.save();
+    }
+
+    const prompt = `
+      Analyze the user's financial data:
+      Monthly Income: ${monthlyIncome}
+      Current Savings: ${currentSavings}
+      Total Investments: ${totalInvestments}
+      Monthly Expenses: ${totalExpenses}
+      Expense Breakdown: ${JSON.stringify(spendingTrends)}
+
+      Generate analysis matching this structure:
+      {
+        "behaviorData": {
+          "spendingPatterns": {
+            "categories": [{
+              "name": string,
+              "monthlyAverage": number,
+              "trend": string
+            }]
+          },
+          "savingsBehavior": {
+            "consistency": string,
+            "averageSavingsRate": number
+          }
+        },
+        "financialSnapshot": {
+          "income": number,
+          "expenses": number,
+          "savings": number,
+          "investments": number
+        },
+        "analysisResults": {
+          "score": number (0-100),
+          "strengths": [string],
+          "weaknesses": [string]
+        }
+      }`;
+
+    const response = await generateAIContent(prompt);
+    const analysis = JSON.parse(response.replace("```json", "").replace("```", ""));
+
+    // Store in financial history
+    await FinancialHistory.create({
+      userId,
+      simulationId: simulation._id, // Use the simulation ID
+      ...analysis
+    });
+
+    return analysis;
+  } catch (error) {
+    console.error('Behavior Analysis Error:', error);
+    throw new Error(`Failed to analyze behavior: ${error.message}`);
+  }
+}
+
+async function updateFinancialHistory(userId, simulationId, updates) {
+  await FinancialHistory.findOneAndUpdate(
+    { userId, simulationId },
+    {
+      $set: updates
+    },
+    { new: true, upsert: true }
+  );
+}

@@ -44,29 +44,3 @@ export const getFinancialProfile = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
-export const getUserSummary = async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    const user = await User.findById(userId).populate('financialId');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    const financialData = user.financialId;
-    const totalExpenses = financialData.expenses.reduce((sum, expense) => sum + expense.amount, 0);
-    const netWorth = financialData.savings + financialData.assets.reduce((sum, asset) => sum + asset.value, 0);
-    const savingsRate = ((financialData.income - totalExpenses) / financialData.income * 100).toFixed(2);
-
-    res.json({
-      name: user.name,
-      netWorth,
-      totalExpenses,
-      savingsRate
-    });
-  } catch (error) {
-    console.error('Error fetching user summary:', error);
-    res.status(500).json({ message: error.message });
-  }
-};

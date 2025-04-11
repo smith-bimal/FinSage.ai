@@ -20,6 +20,7 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json());
+
 app.use("/api/auth", authRouter);
 app.use("/api/simulations", simulationRouter);
 app.use("/api/users", userRouter);

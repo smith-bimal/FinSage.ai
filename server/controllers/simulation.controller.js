@@ -1,118 +1,96 @@
 import Simulation from '../models/simulation.model.js';
-import { projectFutureSavings, projectInvestmentGrowth } from '../utils/calculator.js';
-import { RetrospectiveService } from '../services/simulation/retrospective.service.js';
 import { Financial } from '../models/financial.model.js';
-import { analyzeJobScenario, analyzeInvestmentScenario, analyzePurchaseScenario } from '../utils/scenario.helper.js';
+import { analyzeBehaviorGemini, generateGeminiRecommendations } from '../services/AI/ai.service.js';
 
 export const createSimulation = async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const simulationData = req.body;
+  try {
+    const { userId } = req.params;
+    
+    // Get both AI recommendations and behavior analysis
+    const [aiData, behaviorData] = await Promise.all([
+      generateGeminiRecommendations(userId),
+      analyzeBehaviorGemini(userId)
+    ]);
 
-        const simulation = new Simulation({ userId, ...simulationData });
-        await simulation.save();
+    // Combine the data
+    const simulation = new Simulation({
+      userId,
+      recommendations: aiData.recommendations,
+      behaviorAnalysis: behaviorData.behaviorAnalysis,
+      chartData: {
+        ...aiData.chartData,
+        historicalTrends: behaviorData.historicalAnalysis?.trends || []
+      }
+    });
 
-        res.status(201).json(simulation);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+    await simulation.save();
+    res.status(201).json(simulation);
+  } catch (error) {
+    console.error('Error creating simulation:', error);
+    res.status(500).json({ message: error.message });
+  }
 };
 
-export const getSimulationResults = async (req, res) => {
-    try {
-        const { simulationId } = req.params;
-        const simulation = await Simulation.findById(simulationId);
-        if (!simulation) return res.status(404).json({ message: 'Simulation not found' });
-
-        res.json(simulation.results);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+export const getSimulationWithBehavior = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const simulation = await Simulation.findOne({ userId }).sort({ createdAt: -1 });
+    
+    if (!simulation) {
+      return res.status(404).json({ message: 'No simulation found' });
     }
+
+    // Get fresh behavior analysis
+    const behaviorData = await analyzeBehaviorGemini(userId);
+    
+    // Update simulation with latest behavior
+    simulation.behaviorAnalysis = behaviorData.behaviorAnalysis;
+    simulation.chartData.historicalTrends = behaviorData.historicalAnalysis?.trends || [];
+    await simulation.save();
+
+    res.json(simulation);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
-export const getSimulationProjections = async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const { months, annualReturnRate } = req.body;
-
-        const financialData = await Financial.findOne({ userId });
-        if (!financialData) {
-            return res.status(404).json({ message: 'Financial data not found' });
-        }
-
-        const projectedSavings = projectFutureSavings(
-            financialData.savings,
-            financialData.income * 0.3, // Assuming 30% of income is saved monthly
-            months
-        );
-
-        const projectedInvestments = projectInvestmentGrowth(
-            financialData.investments.reduce((sum, inv) => sum + inv.amount, 0),
-            financialData.income * 0.2, // Assuming 20% of income is invested monthly
-            annualReturnRate,
-            months / 12 // Convert months to years
-        );
-
-        res.json({
-            projectedSavings,
-            projectedInvestments,
-            timeline: months
-        });
-    } catch (error) {
-        console.error('Error generating projections:', error);
-        res.status(500).json({ message: error.message });
-    }
+export const getSimulations = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const simulations = await Simulation.find({ userId });
+    res.json(simulations);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
-export const analyzeScenario = async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const { scenarioType, details } = req.body;
+export const updateSimulation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
 
-        const financialData = await Financial.findOne({ userId });
-        if (!financialData) {
-            return res.status(404).json({ message: 'Financial data not found' });
-        }
-
-        let analysis = {};
-
-        switch (scenarioType) {
-            case 'job':
-                analysis = analyzeJobScenario(financialData, details);
-                break;
-            case 'investment':
-                analysis = analyzeInvestmentScenario(financialData, details);
-                break;
-            case 'purchase':
-                analysis = analyzePurchaseScenario(financialData, details);
-                break;
-            default:
-                return res.status(400).json({ message: 'Invalid scenario type' });
-        }
-
-        res.json({
-            scenarioType,
-            analysis
-        });
-    } catch (error) {
-        console.error('Error analyzing scenario:', error);
-        res.status(500).json({ message: error.message });
+    const simulation = await Simulation.findByIdAndUpdate(id, updates, { new: true });
+    if (!simulation) {
+      return res.status(404).json({ message: 'Simulation not found' });
     }
+
+    res.json(simulation);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
-export const analyzeHistoricalDecisions = async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const { startDate } = req.body;
+export const deleteSimulation = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-        const retrospectiveAnalysis = await RetrospectiveService.analyzeHistoricalDecisions(userId, startDate);
-
-        res.json({
-            success: true,
-            retrospectiveAnalysis
-        });
-    } catch (error) {
-        console.error('Error analyzing historical decisions:', error);
-        res.status(500).json({ message: error.message });
+    const simulation = await Simulation.findByIdAndDelete(id);
+    if (!simulation) {
+      return res.status(404).json({ message: 'Simulation not found' });
     }
+
+    res.json({ message: 'Simulation deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };

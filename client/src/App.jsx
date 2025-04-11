@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router';
-import Dashboard from './pages/Dashboard';
+import Dashboard from './components/Dashboard';
 import NewSimulation from './pages/NewSimulation';
 import Login from './pages/Login';
 import Layout from './components/Layout';
@@ -14,13 +14,13 @@ const PrivateRoute = ({ children }) => {
 function App() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+      {/* <Route path="/login" element={<Login />} /> */}
+      {/* <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}> */}
         <Route index element={<Navigate to="/dashboard" />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="new-simulation" element={<SimulationWizard />} />
         <Route path="results/:simulationId" element={<ResultsPage />} />
-      </Route>
+      {/* </Route> */}
     </Routes>
   );
 }

@@ -1,367 +1,761 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { motion } from 'framer-motion';
+import { Cpu, ArrowRight, DollarSign, Briefcase, Home, MapPin, TrendingUp, ShoppingBag, Plus, ChevronLeft } from 'lucide-react';
 import api from '../config/axios.config.js';
 
 function NewSimulation() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    // Current Life (Step 2)
-    monthlyIncome: '',
-    expenses: {
-      food: '',
-      rent: '',
-      shopping: '',
-      utilities: '',
-      transportation: '',
-      entertainment: '',
-      others: ''
-    },
-    currentSavings: '',
-    currentInvestments: {
-      stocks: '',
-      mutualFunds: '',
-      fixedDeposits: '',
-      others: ''
-    },
+    // Current Financial Life
+    income: '',
+    savings: '',
+    expenses: [
+      { category: 'food', amount: '', frequency: 'monthly', date: new Date() },
+      { category: 'rent', amount: '', frequency: 'monthly', date: new Date() },
+      { category: 'shopping', amount: '', frequency: 'monthly', date: new Date() },
+      { category: 'utilities', amount: '', frequency: 'monthly', date: new Date() },
+      { category: 'transportation', amount: '', frequency: 'monthly', date: new Date() },
+      { category: 'entertainment', amount: '', frequency: 'monthly', date: new Date() },
+      { category: 'others', amount: '', frequency: 'monthly', date: new Date() }
+    ],
+    investments: [
+      { type: 'stocks', amount: '', returnRate: 12, startDate: new Date() },
+      { type: 'mutualFunds', amount: '', returnRate: 10, startDate: new Date() },
+      { type: 'fixedDeposits', amount: '', returnRate: 7, startDate: new Date() },
+      { type: 'others', amount: '', returnRate: 8, startDate: new Date() }
+    ],
+    assets: [
+      { name: '', value: '', purchaseDate: new Date() }
+    ],
 
-    // Future Changes (Step 3)
+    // Future Scenario
     scenario: 'job',
-    expectedSalary: '',
+    timeline: '12', // months
+
+    // Job scenario
+    newSalary: '',
+
+    // Investment scenario
+    investmentAmount: '',
+    annualReturnRate: '10',
+
+    // Purchase scenario
+    purchaseCost: '',
+
+    // City scenario (not in backend but keeping for UI)
     newCity: '',
     cityDetails: {
       expectedRent: '',
       costOfLiving: ''
     },
+
+    // Business scenario (not in backend but keeping for UI)
     businessInvestment: '',
     businessType: '',
+
+    // Asset scenario
     assetValue: '',
     assetType: '',
-    timeline: '1' // 1, 5, or 10 years
   });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const userId = localStorage.getItem('userId');
-      const getScenarioInputs = () => {
-        switch (formData.scenario) {
-          case 'job':
-            return {
-              expectedSalary: Number(formData.expectedSalary) || 0
-            };
-          case 'city':
-            return {
-              newCity: formData.newCity,
-              cityDetails: {
-                expectedRent: Number(formData.cityDetails.expectedRent) || 0,
-                costOfLiving: Number(formData.cityDetails.costOfLiving) || 0
-              }
-            };
-          case 'business':
-            return {
-              businessInvestment: Number(formData.businessInvestment) || 0,
-              businessType: formData.businessType
-            };
-          case 'asset':
-            return {
-              assetValue: Number(formData.assetValue) || 0,
-              assetType: formData.assetType
-            };
-          default:
-            return {};
-        }
+
+      // Prepare expenses data - filter out empty amounts
+      const expenses = formData.expenses
+        .filter(expense => expense.amount.trim() !== '')
+        .map(expense => ({
+          category: expense.category,
+          amount: Number(expense.amount),
+          frequency: expense.frequency,
+          date: expense.date
+        }));
+
+      // Prepare investments data - filter out empty amounts
+      const investments = formData.investments
+        .filter(investment => investment.amount.trim() !== '')
+        .map(investment => ({
+          type: investment.type,
+          amount: Number(investment.amount),
+          returnRate: Number(investment.returnRate),
+          startDate: investment.startDate
+        }));
+
+      // Prepare assets data - filter out empty names and values
+      const assets = formData.assets
+        .filter(asset => asset.name.trim() !== '' && asset.value.trim() !== '')
+        .map(asset => ({
+          name: asset.name,
+          value: Number(asset.value),
+          purchaseDate: asset.purchaseDate
+        }));
+
+      // First create/update financial data
+      const financialData = {
+        income: Number(formData.income) || 0,
+        savings: Number(formData.savings) || 0,
+        expenses,
+        investments,
+        assets
       };
 
+      await api.put(`/financial/${userId}`, financialData);
+
+      // Prepare scenario details based on selected scenario
+      const details = {};
+      switch (formData.scenario) {
+        case 'job':
+          details.newSalary = Number(formData.newSalary) || 0;
+          break;
+        case 'investment':
+          details.investmentAmount = Number(formData.investmentAmount) || 0;
+          details.annualReturnRate = Number(formData.annualReturnRate) || 0;
+          break;
+        case 'purchase':
+          details.purchaseCost = Number(formData.purchaseCost) || 0;
+          break;
+        default:
+          // For UI scenarios not explicitly in backend
+          details.type = formData.scenario;
+          if (formData.scenario === 'city') {
+            details.newCity = formData.newCity;
+            details.expectedRent = Number(formData.cityDetails.expectedRent) || 0;
+            details.costOfLiving = Number(formData.cityDetails.costOfLiving) || 0;
+          } else if (formData.scenario === 'business') {
+            details.investment = Number(formData.businessInvestment) || 0;
+            details.type = formData.businessType;
+          } else if (formData.scenario === 'asset') {
+            details.value = Number(formData.assetValue) || 0;
+            details.type = formData.assetType;
+          }
+      }
+
+      // Now create the simulation
       const simulationData = {
         userId,
-        currentState: {
-          monthlyIncome: Number(formData.monthlyIncome) || 0,
-          expenses: Object.fromEntries(
-            Object.entries(formData.expenses).map(([k, v]) => [k, Number(v) || 0])
-          ),
-          savings: Number(formData.currentSavings) || 0,
-          investments: Object.fromEntries(
-            Object.entries(formData.currentInvestments).map(([k, v]) => [k, Number(v) || 0])
-          )
-        },
-        futureState: {
-          scenario: formData.scenario,
-          timeline: Number(formData.timeline) || 1,
-          inputs: getScenarioInputs()
-        }
+        futureState: [{
+          type: formData.scenario,
+          timeline: Number(formData.timeline) || 12,
+          details
+        }]
       };
 
-      const response = await api.post('/simulations', simulationData);
+      const response = await api.post(`/simulations/${userId}`, simulationData);
       if (response.data) {
-        navigate('/results', { state: { simulationId: response.data.id } });
+        navigate('/results', { state: { simulationId: response.data._id } });
       }
     } catch (err) {
       console.error('Simulation error:', err.response?.data || err.message);
     }
   };
 
+  // Helper function to update expense values
+  const updateExpense = (index, field, value) => {
+    const updatedExpenses = [...formData.expenses];
+    updatedExpenses[index] = {
+      ...updatedExpenses[index],
+      [field]: value
+    };
+    setFormData({
+      ...formData,
+      expenses: updatedExpenses
+    });
+  };
+
+  // Helper function to update investment values
+  const updateInvestment = (index, field, value) => {
+    const updatedInvestments = [...formData.investments];
+    updatedInvestments[index] = {
+      ...updatedInvestments[index],
+      [field]: value
+    };
+    setFormData({
+      ...formData,
+      investments: updatedInvestments
+    });
+  };
+
+  // Helper function to update asset values
+  const updateAsset = (index, field, value) => {
+    const updatedAssets = [...formData.assets];
+    updatedAssets[index] = {
+      ...updatedAssets[index],
+      [field]: value
+    };
+    setFormData({
+      ...formData,
+      assets: updatedAssets
+    });
+  };
+
+  // Add a new empty asset field
+  const addAsset = () => {
+    setFormData({
+      ...formData,
+      assets: [
+        ...formData.assets,
+        { name: '', value: '', purchaseDate: new Date() }
+      ]
+    });
+  };
+
+  // Icons for different scenarios
+  const scenarioIcons = {
+    job: <Briefcase className="h-6 w-6" />,
+    investment: <TrendingUp className="h-6 w-6" />,
+    purchase: <ShoppingBag className="h-6 w-6" />,
+    city: <MapPin className="h-6 w-6" />,
+    business: <DollarSign className="h-6 w-6" />,
+    asset: <Home className="h-6 w-6" />
+  };
+
+  // Get step title for header
+  const getStepTitle = () => {
+    if (step === 1) return "Your Current Financial Profile";
+    if (step === 2) return "Explore Your Financial Future";
+    return "";
+  }
+
   return (
-    <div className="min-h-screen bg-gray-900 p-6">
-      <div className="max-w-2xl mx-auto space-y-8">
-        {/* Progress indicator */}
-        <div className="flex justify-between text-gray-400">
-          <span className={step === 1 ? 'text-white' : ''}>Current Financial Life</span>
-          <span className={step === 2 ? 'text-white' : ''}>Future Changes</span>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-black via-gray-950 to-gray-950 p-6">
+      <div className="w-full max-w-4xl">
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex items-center">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mr-3">
+              <Cpu className="h-5 w-5 text-white" />
+            </div>
+            <span className="text-white text-xl font-extrabold">
+              Fin<span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Sage.ai</span>
+            </span>
+          </div>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="text-gray-400 hover:text-white transition-colors"
+          >
+            Cancel
+          </button>
         </div>
 
-        <h1 className="text-3xl font-bold text-white text-center">
-          {step === 1 ? 'Your Current Financial Life' : 'Future Changes'}
-        </h1>
+        {/* Progress Steps */}
+        <div className="mb-8 relative">
+          <div className="w-full h-1 bg-gray-800 absolute top-5"></div>
+          <div
+            className="h-1 bg-gradient-to-r from-purple-600 to-blue-600 absolute top-5 transition-all duration-300"
+            style={{ width: step === 1 ? '50%' : '100%' }}
+          ></div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {step === 1 ? (
-            // Step 1: Current Life
-            <div className="bg-gray-800 p-6 rounded-lg space-y-4">
-              <div>
-                <label className="text-gray-300">Monthly Income</label>
-                <input
-                  type="number"
-                  className="w-full bg-gray-700 text-white rounded p-2 mt-1"
-                  value={formData.monthlyIncome}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    monthlyIncome: e.target.value
-                  })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-gray-300">Monthly Expenses</h3>
-                {Object.keys(formData.expenses).map(expense => (
-                  <div key={expense}>
-                    <label className="text-gray-400 capitalize">{expense}</label>
-                    <input
-                      type="number"
-                      className="w-full bg-gray-700 text-white rounded p-2 mt-1"
-                      value={formData.expenses[expense]}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        expenses: {
-                          ...formData.expenses,
-                          [expense]: e.target.value
-                        }
-                      })}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div>
-                <label className="text-gray-300">Current Savings/Investments</label>
-                <input
-                  type="number"
-                  className="w-full bg-gray-700 text-white rounded p-2 mt-1"
-                  value={formData.currentSavings}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    currentSavings: e.target.value
-                  })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-gray-300">Current Investments</h3>
-                {Object.keys(formData.currentInvestments).map(investment => (
-                  <div key={investment}>
-                    <label className="text-gray-400 capitalize">{investment}</label>
-                    <input
-                      type="number"
-                      className="w-full bg-gray-700 text-white rounded p-2 mt-1"
-                      value={formData.currentInvestments[investment]}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        currentInvestments: {
-                          ...formData.currentInvestments,
-                          [investment]: e.target.value
-                        }
-                      })}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="w-full bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700"
-              >
-                Next: Future Changes
-              </button>
-            </div>
-          ) : (
-            // Step 2: Future Changes
-            <div className="bg-gray-800 p-6 rounded-lg space-y-4">
-              <div>
-                <label className="text-gray-300">Choose Scenario</label>
-                <select
-                  className="w-full bg-gray-700 text-white rounded p-2 mt-1"
-                  value={formData.scenario}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    scenario: e.target.value
-                  })}
+          <div className="flex justify-between relative z-10">
+            {[1, 2].map((stepNumber) => (
+              <div key={stepNumber} className="flex flex-col items-center">
+                <div
+                  className={`h-12 w-12 rounded-full flex items-center justify-center font-bold text-lg ${
+                    step === stepNumber
+                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
+                      : 'bg-gray-700 text-gray-400'
+                  }`}
                 >
-                  <option value="job">Change Jobs</option>
-                  <option value="city">Move to New City</option>
-                  <option value="business">Start Business</option>
-                  <option value="asset">Buy Asset (Car/House)</option>
-                </select>
-              </div>
-
-              {/* Dynamic fields based on scenario */}
-              {formData.scenario === 'job' && (
-                <div>
-                  <label className="text-gray-300">Expected New Salary</label>
-                  <input
-                    type="number"
-                    className="w-full bg-gray-700 text-white rounded p-2 mt-1"
-                    value={formData.expectedSalary}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      expectedSalary: e.target.value
-                    })}
-                  />
+                  {stepNumber}
                 </div>
-              )}
-
-              {formData.scenario === 'city' && (
-                <div>
-                  <label className="text-gray-300">New City</label>
-                  <input
-                    type="text"
-                    className="w-full bg-gray-700 text-white rounded p-2 mt-1"
-                    value={formData.newCity}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      newCity: e.target.value
-                    })}
-                  />
-                  <div>
-                    <label className="text-gray-300">Expected Rent</label>
-                    <input
-                      type="number"
-                      className="w-full bg-gray-700 text-white rounded p-2 mt-1"
-                      value={formData.cityDetails.expectedRent}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        cityDetails: {
-                          ...formData.cityDetails,
-                          expectedRent: e.target.value
-                        }
-                      })}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-gray-300">Cost of Living</label>
-                    <input
-                      type="number"
-                      className="w-full bg-gray-700 text-white rounded p-2 mt-1"
-                      value={formData.cityDetails.costOfLiving}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        cityDetails: {
-                          ...formData.cityDetails,
-                          costOfLiving: e.target.value
-                        }
-                      })}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {formData.scenario === 'business' && (
-                <div>
-                  <label className="text-gray-300">Business Investment</label>
-                  <input
-                    type="number"
-                    className="w-full bg-gray-700 text-white rounded p-2 mt-1"
-                    value={formData.businessInvestment}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      businessInvestment: e.target.value
-                    })}
-                  />
-                  <div>
-                    <label className="text-gray-300">Business Type</label>
-                    <input
-                      type="text"
-                      className="w-full bg-gray-700 text-white rounded p-2 mt-1"
-                      value={formData.businessType}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        businessType: e.target.value
-                      })}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {formData.scenario === 'asset' && (
-                <div>
-                  <label className="text-gray-300">Asset Value</label>
-                  <input
-                    type="number"
-                    className="w-full bg-gray-700 text-white rounded p-2 mt-1"
-                    value={formData.assetValue}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      assetValue: e.target.value
-                    })}
-                  />
-                  <div>
-                    <label className="text-gray-300">Asset Type</label>
-                    <input
-                      type="text"
-                      className="w-full bg-gray-700 text-white rounded p-2 mt-1"
-                      value={formData.assetType}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        assetType: e.target.value
-                      })}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="text-gray-300">Timeline</label>
-                <select
-                  className="w-full bg-gray-700 text-white rounded p-2 mt-1"
-                  value={formData.timeline}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    timeline: e.target.value
-                  })}
+                <span
+                  className={`mt-2 text-sm ${
+                    step === stepNumber ? 'text-white' : 'text-gray-400'
+                  }`}
                 >
-                  <option value="1">1 Year</option>
-                  <option value="5">5 Years</option>
-                  <option value="10">10 Years</option>
-                </select>
+                  {stepNumber === 1 ? 'Current Financial Life' : 'Future Changes'}
+                </span>
               </div>
+            ))}
+          </div>
+        </div>
 
-              <div className="flex space-x-4">
-                <button
+        {/* Form Header */}
+        <motion.div
+          className="text-center mb-8"
+          key={step}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <h1 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
+            {getStepTitle()}
+          </h1>
+          <p className="text-gray-400 mt-2">
+            {step === 1 ?
+              "Let's understand your current financial position to create accurate projections." :
+              "Simulate different financial scenarios to visualize their impact on your future."}
+          </p>
+        </motion.div>
+
+        <form onSubmit={handleSubmit}>
+          <motion.div
+            key={`step-${step}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5 }}
+            className="bg-black/20 backdrop-blur-xl rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] border border-gray-800/50 overflow-hidden p-6 md:p-8"
+          >
+            {step === 1 ? (
+              // Step 1: Current Financial Life
+              <div className="space-y-6">
+                {/* Income Section */}
+                <div className="bg-gray-900/40 backdrop-blur-sm p-5 rounded-xl border border-gray-800/50">
+                  <div className="flex items-center mb-4">
+                    <div className="p-2 bg-blue-600/20 rounded-lg mr-3">
+                      <DollarSign className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <h3 className="text-white text-lg font-semibold">Monthly Income & Savings</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="relative group">
+                      <label className="text-sm text-gray-400 mb-1 block">Monthly Income</label>
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white placeholder-gray-500 outline-none transition-colors"
+                        value={formData.income}
+                        onChange={(e) => setFormData({ ...formData, income: e.target.value })}
+                      />
+                      <div className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-400 to-purple-400 group-focus-within:w-full transition-all duration-300"></div>
+                    </div>
+
+                    <div className="relative group">
+                      <label className="text-sm text-gray-400 mb-1 block">Current Savings</label>
+                      <input
+                        type="number"
+                        placeholder="0.00"
+                        className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white placeholder-gray-500 outline-none transition-colors"
+                        value={formData.savings}
+                        onChange={(e) => setFormData({ ...formData, savings: e.target.value })}
+                      />
+                      <div className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-400 to-purple-400 group-focus-within:w-full transition-all duration-300"></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expenses Section */}
+                <div className="bg-gray-900/40 backdrop-blur-sm p-5 rounded-xl border border-gray-800/50">
+                  <div className="flex items-center mb-4">
+                    <div className="p-2 bg-purple-600/20 rounded-lg mr-3">
+                      <ShoppingBag className="h-5 w-5 text-purple-400" />
+                    </div>
+                    <h3 className="text-white text-lg font-semibold">Monthly Expenses</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {formData.expenses.map((expense, index) => (
+                      <div key={index} className="relative group">
+                        <label className="text-sm text-gray-400 mb-1 block capitalize">{expense.category}</label>
+                        <input
+                          type="number"
+                          placeholder="0.00"
+                          className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white placeholder-gray-500 outline-none transition-colors"
+                          value={expense.amount}
+                          onChange={(e) => updateExpense(index, 'amount', e.target.value)}
+                        />
+                        <div className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-400 to-pink-400 group-focus-within:w-full transition-all duration-300"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Investments Section */}
+                <div className="bg-gray-900/40 backdrop-blur-sm p-5 rounded-xl border border-gray-800/50">
+                  <div className="flex items-center mb-4">
+                    <div className="p-2 bg-green-600/20 rounded-lg mr-3">
+                      <TrendingUp className="h-5 w-5 text-green-400" />
+                    </div>
+                    <h3 className="text-white text-lg font-semibold">Current Investments</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {formData.investments.map((investment, index) => (
+                      <div key={index} className="relative group">
+                        <label className="text-sm text-gray-400 mb-1 block capitalize">{investment.type}</label>
+                        <input
+                          type="number"
+                          placeholder="0.00"
+                          className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white placeholder-gray-500 outline-none transition-colors"
+                          value={investment.amount}
+                          onChange={(e) => updateInvestment(index, 'amount', e.target.value)}
+                        />
+                        <div className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-gradient-to-r from-green-400 to-blue-400 group-focus-within:w-full transition-all duration-300"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Assets Section */}
+                <div className="bg-gray-900/40 backdrop-blur-sm p-5 rounded-xl border border-gray-800/50">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-yellow-600/20 rounded-lg mr-3">
+                        <Home className="h-5 w-5 text-yellow-400" />
+                      </div>
+                      <h3 className="text-white text-lg font-semibold">Assets</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addAsset}
+                      className="flex items-center bg-gray-800/70 hover:bg-gray-700/70 text-gray-300 hover:text-white text-sm px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <Plus className="h-4 w-4 mr-1" /> Add Asset
+                    </button>
+                  </div>
+
+                  <div className="space-y-6">
+                    {formData.assets.map((asset, index) => (
+                      <div key={index} className="p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="relative group">
+                            <label className="text-sm text-gray-400 mb-1 block">Asset Name</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Car, House, Gold"
+                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white placeholder-gray-500 outline-none transition-colors"
+                              value={asset.name}
+                              onChange={(e) => updateAsset(index, 'name', e.target.value)}
+                            />
+                            <div className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-400 to-orange-400 group-focus-within:w-full transition-all duration-300"></div>
+                          </div>
+
+                          <div className="relative group">
+                            <label className="text-sm text-gray-400 mb-1 block">Value</label>
+                            <input
+                              type="number"
+                              placeholder="0.00"
+                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white placeholder-gray-500 outline-none transition-colors"
+                              value={asset.value}
+                              onChange={(e) => updateAsset(index, 'value', e.target.value)}
+                            />
+                            <div className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-400 to-orange-400 group-focus-within:w-full transition-all duration-300"></div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <motion.button
                   type="button"
-                  onClick={() => setStep(1)}
-                  className="w-1/2 bg-gray-700 text-white p-2 rounded hover:bg-gray-600"
+                  onClick={() => setStep(2)}
+                  className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg text-white font-semibold flex items-center justify-center group"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
                 >
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  className="w-1/2 bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700"
-                >
-                  Create Simulation
-                </button>
+                  Continue to Future Changes
+                  <ArrowRight className="ml-2 h-5 w-5 transform group-hover:translate-x-1 transition-transform" />
+                </motion.button>
               </div>
-            </div>
-          )}
+            ) : (
+              // Step 2: Future Changes
+              <div className="space-y-6">
+                {/* Scenario Selection */}
+                <div className="bg-gray-900/40 backdrop-blur-sm p-5 rounded-xl border border-gray-800/50">
+                  <h3 className="text-white text-lg font-semibold mb-4">Choose Your Financial Scenario</h3>
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {[
+                      { value: 'job', label: 'Change Jobs', color: 'from-blue-500 to-indigo-500' },
+                      { value: 'investment', label: 'Make Investment', color: 'from-green-500 to-emerald-500' },
+                      { value: 'purchase', label: 'Major Purchase', color: 'from-red-500 to-pink-500' },
+                      { value: 'city', label: 'Move to New City', color: 'from-purple-500 to-violet-500' },
+                      { value: 'business', label: 'Start Business', color: 'from-amber-500 to-orange-500' },
+                      { value: 'asset', label: 'Buy Asset', color: 'from-cyan-500 to-blue-500' }
+                    ].map(scenario => (
+                      <motion.div
+                        key={scenario.value}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setFormData({ ...formData, scenario: scenario.value })}
+                        className={`cursor-pointer rounded-xl border ${formData.scenario === scenario.value ?
+                            `bg-gradient-to-br ${scenario.color} border-transparent` :
+                            'bg-gray-800/70 border-gray-700 hover:border-gray-600'
+                          } p-4 flex flex-col items-center justify-center transition-all`}
+                      >
+                        <div className={`p-2 rounded-lg ${formData.scenario === scenario.value ? 'bg-white/20' : 'bg-gray-700'} mb-2`}>
+                          {scenarioIcons[scenario.value]}
+                        </div>
+                        <span className={`text-sm font-medium ${formData.scenario === scenario.value ? 'text-white' : 'text-gray-300'}`}>
+                          {scenario.label}
+                        </span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Dynamic Scenario Fields */}
+                <div className="bg-gray-900/40 backdrop-blur-sm p-5 rounded-xl border border-gray-800/50">
+                  <div className="flex items-center mb-4">
+                    <div className="p-2 bg-purple-600/20 rounded-lg mr-3">
+                      {scenarioIcons[formData.scenario]}
+                    </div>
+                    <h3 className="text-white text-lg font-semibold capitalize">
+                      {formData.scenario === 'job' ? 'New Job Details' :
+                        formData.scenario === 'investment' ? 'Investment Details' :
+                          formData.scenario === 'purchase' ? 'Purchase Details' :
+                            formData.scenario === 'city' ? 'Relocation Details' :
+                              formData.scenario === 'business' ? 'Business Details' :
+                                'Asset Purchase Details'}
+                    </h3>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Job Details */}
+                    {formData.scenario === 'job' && (
+                      <div className="space-y-4">
+                        <div className="relative group">
+                          <label className="text-sm text-gray-400 mb-1 block">Expected New Monthly Salary</label>
+                          <div className="relative">
+                            <span className="absolute left-4 top-3.5 text-gray-400">₹</span>
+                            <input
+                              type="number"
+                              placeholder="0.00"
+                              className="w-full px-4 py-3 pl-8 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white placeholder-gray-500 outline-none transition-colors"
+                              value={formData.newSalary}
+                              onChange={(e) => setFormData({ ...formData, newSalary: e.target.value })}
+                            />
+                          </div>
+                          <div className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-400 to-indigo-400 group-focus-within:w-full transition-all duration-300"></div>
+                          <p className="text-xs text-gray-500 mt-1">Enter your expected monthly salary after taxes</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Investment Details */}
+                    {formData.scenario === 'investment' && (
+                      <div className="space-y-4">
+                        <div className="relative group">
+                          <label className="text-sm text-gray-400 mb-1 block">Investment Amount</label>
+                          <div className="relative">
+                            <span className="absolute left-4 top-3.5 text-gray-400">₹</span>
+                            <input
+                              type="number"
+                              placeholder="0.00"
+                              className="w-full px-4 py-3 pl-8 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white placeholder-gray-500 outline-none transition-colors"
+                              value={formData.investmentAmount}
+                              onChange={(e) => setFormData({ ...formData, investmentAmount: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="relative group">
+                          <label className="text-sm text-gray-400 mb-1 block">Expected Annual Return Rate</label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              placeholder="10"
+                              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white placeholder-gray-500 outline-none transition-colors"
+                              value={formData.annualReturnRate}
+                              onChange={(e) => setFormData({ ...formData, annualReturnRate: e.target.value })}
+                            />
+                            <span className="absolute right-4 top-3.5 text-gray-400">%</span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">Average market returns: 7-12% for stocks, 3-5% for bonds</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Purchase Details */}
+                    {formData.scenario === 'purchase' && (
+                      <div className="space-y-4">
+                        <div className="relative group">
+                          <label className="text-sm text-gray-400 mb-1 block">Purchase Cost</label>
+                          <div className="relative">
+                            <span className="absolute left-4 top-3.5 text-gray-400">₹</span>
+                            <input
+                              type="number"
+                              placeholder="0.00"
+                              className="w-full px-4 py-3 pl-8 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white placeholder-gray-500 outline-none transition-colors"
+                              value={formData.purchaseCost}
+                              onChange={(e) => setFormData({ ...formData, purchaseCost: e.target.value })}
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">The total cost of your planned purchase</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* City Details */}
+                    {formData.scenario === 'city' && (
+                      <div className="space-y-4">
+                        <div className="relative group">
+                          <label className="text-sm text-gray-400 mb-1 block">New City</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Mumbai, Bangalore"
+                            className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white placeholder-gray-500 outline-none transition-colors"
+                            value={formData.newCity}
+                            onChange={(e) => setFormData({ ...formData, newCity: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="relative group">
+                            <label className="text-sm text-gray-400 mb-1 block">Expected Monthly Rent</label>
+                            <div className="relative">
+                              <span className="absolute left-4 top-3.5 text-gray-400">₹</span>
+                              <input
+                                type="number"
+                                placeholder="0.00"
+                                className="w-full px-4 py-3 pl-8 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white placeholder-gray-500 outline-none transition-colors"
+                                value={formData.cityDetails.expectedRent}
+                                onChange={(e) => setFormData({
+                                  ...formData,
+                                  cityDetails: {
+                                    ...formData.cityDetails,
+                                    expectedRent: e.target.value
+                                  }
+                                })}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="relative group">
+                            <label className="text-sm text-gray-400 mb-1 block">Monthly Cost of Living</label>
+                            <div className="relative">
+                              <span className="absolute left-4 top-3.5 text-gray-400">₹</span>
+                              <input
+                                type="number"
+                                placeholder="0.00"
+                                className="w-full px-4 py-3 pl-8 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white placeholder-gray-500 outline-none transition-colors"
+                                value={formData.cityDetails.costOfLiving}
+                                onChange={(e) => setFormData({
+                                  ...formData,
+                                  cityDetails: {
+                                    ...formData.cityDetails,
+                                    costOfLiving: e.target.value
+                                  }
+                                })}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Business Details */}
+                    {formData.scenario === 'business' && (
+                      <div className="space-y-4">
+                        <div className="relative group">
+                          <label className="text-sm text-gray-400 mb-1 block">Initial Investment</label>
+                          <div className="relative">
+                            <span className="absolute left-4 top-3.5 text-gray-400">₹</span>
+                            <input
+                              type="number"
+                              placeholder="0.00"
+                              className="w-full px-4 py-3 pl-8 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white placeholder-gray-500 outline-none transition-colors"
+                              value={formData.businessInvestment}
+                              onChange={(e) => setFormData({ ...formData, businessInvestment: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="relative group">
+                          <label className="text-sm text-gray-400 mb-1 block">Business Type</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Restaurant, E-commerce, Consulting"
+                            className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white placeholder-gray-500 outline-none transition-colors"
+                            value={formData.businessType}
+                            onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Asset Details */}
+                    {formData.scenario === 'asset' && (
+                      <div className="space-y-4">
+                        <div className="relative group">
+                          <label className="text-sm text-gray-400 mb-1 block">Asset Value</label>
+                          <div className="relative">
+                            <span className="absolute left-4 top-3.5 text-gray-400">₹</span>
+                            <input
+                              type="number"
+                              placeholder="0.00"
+                              className="w-full px-4 py-3 pl-8 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white placeholder-gray-500 outline-none transition-colors"
+                              value={formData.assetValue}
+                              onChange={(e) => setFormData({ ...formData, assetValue: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="relative group">
+                          <label className="text-sm text-gray-400 mb-1 block">Asset Type</label>
+                          <select
+                            className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white outline-none transition-colors appearance-none"
+                            value={formData.assetType}
+                            onChange={(e) => setFormData({ ...formData, assetType: e.target.value })}
+                          >
+                            <option value="" disabled>Select an asset type</option>
+                            <option value="vehicle">Vehicle</option>
+                            <option value="property">Property</option>
+                            <option value="electronics">Electronics</option>
+                            <option value="jewelry">Jewelry</option>
+                            <option value="other">Other</option>
+                          </select>
+                          <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Timeline selector */}
+                    <div className="relative group mt-6">
+                      <label className="text-sm text-gray-400 mb-1 block">Simulation Timeline</label>
+                      <select
+                        className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 focus:border-blue-500 rounded-lg text-white outline-none transition-colors appearance-none"
+                        value={formData.timeline}
+                        onChange={(e) => setFormData({ ...formData, timeline: e.target.value })}
+                      >
+                        <option value="12">1 Year (12 months)</option>
+                        <option value="60">5 Years (60 months)</option>
+                        <option value="120">10 Years (120 months)</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex space-x-4">
+                  <motion.button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="w-1/2 py-3 px-6 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-600 rounded-lg text-gray-300 hover:text-white font-semibold flex items-center justify-center"
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                  >
+                    <ChevronLeft className="mr-2 h-5 w-5" />
+                    Back
+                  </motion.button>
+
+                  <motion.button
+                    type="submit"
+                    className="w-1/2 py-3 px-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg text-white font-semibold flex items-center justify-center"
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                  >
+                    Create Simulation
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </motion.button>
+                </div>
+              </div>
+            )}
+          </motion.div>
         </form>
       </div>
     </div>

@@ -1,4 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { financialService } from "../services/financial.service.js";
+import { simulationService } from "../services/simulation.service.js";
+import { authService } from "../services/auth.service.js";
 import {
   FaStar,
   FaTachometerAlt,
@@ -25,22 +29,97 @@ import {
 } from "recharts";
 
 const Dashboard = () => {
-  // Financial Overview Data
-  const financialOverviewData = {
-    netWorth: 125000,
-    monthlySavings: 3200,
-    investmentGrowth: 8.2,
-    debtRatio: 0.28,
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [financialData, setFinancialData] = useState(null);
+  const [simulations, setSimulations] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const userId = localStorage.getItem('userId');
+        
+        if (!userId) {
+          navigate('/login');
+          return;
+        }
+        
+        // Fetch user data
+        const userData = await authService.getCurrentUser();
+        setUser(userData);
+        
+        // Fetch financial data
+        const financialResponse = await financialService.getFinancialData(userId);
+        setFinancialData(financialResponse);
+        
+        // Fetch simulations
+        const simulationsResponse = await simulationService.getUserSimulations(userId);
+        setSimulations(simulationsResponse);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchDashboardData();
+  }, [navigate]);
+
+  const handleNewSimulation = () => {
+    navigate('/new-simulation');
   };
 
-  // Data for PieChart (Monthly Spending)
-  const spendingData = [
-    { name: "Subscriptions", value: 148.4 },
-    { name: "Food & Dining", value: 614.16 },
-    { name: "Housing", value: 824.28 },
-    { name: "Transportation", value: 342.48 },
-    { name: "Entertainment", value: 220.0 },
-  ];
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/login');
+  };
+
+  // Calculate financial overview data
+  const calculateFinancialOverview = () => {
+    if (!financialData) return {
+      netWorth: 0,
+      monthlySavings: 0,
+      investmentGrowth: 0,
+      debtRatio: 0
+    };
+    
+    const totalInvestments = financialData.investments.reduce(
+      (sum, inv) => sum + inv.amount, 0
+    );
+    
+    const totalExpenses = financialData.expenses.reduce(
+      (sum, exp) => sum + exp.amount, 0
+    );
+    
+    const monthlySavings = Math.max(0, financialData.income - totalExpenses);
+    
+    // Calculate investment growth if available
+    const investmentGrowth = financialData.investments.length > 0 
+      ? financialData.investments.reduce((sum, inv) => sum + (inv.returnRate || 0), 0) / financialData.investments.length
+      : 0;
+      
+    return {
+      netWorth: financialData.savings + totalInvestments,
+      monthlySavings,
+      investmentGrowth: investmentGrowth || 0,
+      debtRatio: 0.28 // This should come from real data
+    };
+  };
+
+  // Transform expenses data for chart
+  const transformExpensesForChart = () => {
+    if (!financialData || !financialData.expenses) return [];
+    
+    return financialData.expenses.map(expense => ({
+      name: expense.category.charAt(0).toUpperCase() + expense.category.slice(1),
+      value: expense.amount
+    }));
+  };
+
+  const financialOverviewData = calculateFinancialOverview();
+  const spendingData = transformExpensesForChart();
 
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#A28DFF"];
 
@@ -93,6 +172,7 @@ const Dashboard = () => {
           <a
             className="flex items-center text-white hover:text-blue-600"
             href="#"
+            onClick={handleLogout}
           >
             <FaSignOutAlt className="mr-2" />
             Logout
@@ -103,22 +183,25 @@ const Dashboard = () => {
       <div className="flex-1 p-6 overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Welcome back, Mandal</h1>
+            <h1 className="text-2xl font-bold">Welcome back, {user?.name || 'User'}</h1>
             <p className="text-gray-500">
-              Your current sales summary and activity.
+              Your financial dashboard and activity.
             </p>
           </div>
           <div className="flex items-center">
-            <button className="bg-blue-600 text-white px-4 py-2 rounded mr-4 cursor-pointer">
+            <button 
+              className="bg-blue-600 text-white px-4 py-2 rounded mr-4 cursor-pointer"
+              onClick={handleNewSimulation}
+            >
               New Simulation
             </button>
             <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold">
-              M
+              {user?.name?.charAt(0) || 'U'}
             </div>
           </div>
         </div>
 
-        {/* Financial Overview Cards */}
+        {/* Financial Overview Cards - Use dynamic data */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           <div className="bg-gradient-to-br from-blue-900 to-blue-700 p-6 rounded-lg shadow border border-blue-600">
             <div className="flex items-center mb-4">

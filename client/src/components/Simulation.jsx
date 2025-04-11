@@ -1,9 +1,11 @@
 import { useState } from "react";
-// import { useNavigate } from "react-router";
-// import api from "../config/axios.config.js";
+import { useNavigate } from "react-router";
+import { financialService } from "../services/financial.service.js";
+import { simulationService } from "../services/simulation.service.js";
+import { toast } from "react-hot-toast";
 
 function NewSimulation() {
-//   const navigate = useNavigate();
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     monthlyIncome: "",
@@ -43,69 +45,104 @@ function NewSimulation() {
     assetType: "",
     timeline: "1",
   });
+  
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setLoading(true);
       const userId = localStorage.getItem("userId");
-      const getScenarioInputs = () => {
-        switch (formData.scenario) {
-          case "job":
-            return { expectedSalary: Number(formData.expectedSalary) || 0 };
-          case "city":
-            return {
-              newCity: formData.newCity,
-              cityDetails: {
-                expectedRent: Number(formData.cityDetails.expectedRent) || 0,
-                costOfLiving: Number(formData.cityDetails.costOfLiving) || 0,
-              },
-            };
-          case "business":
-            return {
-              businessInvestment: Number(formData.businessInvestment) || 0,
-              businessType: formData.businessType,
-            };
-          case "asset":
-            return {
-              assetValue: Number(formData.assetValue) || 0,
-              assetType: formData.assetType,
-            };
-          default:
-            return {};
-        }
+      
+      if (!userId) {
+        toast.error("Please login to create a simulation");
+        navigate("/login");
+        return;
+      }
+
+      // First create/update financial data
+      const financialData = {
+        income: Number(formData.monthlyIncome) || 0,
+        savings: Number(formData.currentSavings) || 0,
+        expenses: Object.entries(formData.expenses)
+          .filter(([_, value]) => value.trim() !== '')
+          .map(([category, amount]) => ({
+            category,
+            amount: Number(amount),
+            frequency: 'monthly',
+            date: new Date()
+          })),
+        investments: Object.entries(formData.currentInvestments)
+          .filter(([_, value]) => value.trim() !== '')
+          .map(([type, amount]) => ({
+            type,
+            amount: Number(amount),
+            returnRate: type === 'stocks' ? 12 : type === 'mutualFunds' ? 10 : type === 'fixedDeposits' ? 7 : 8,
+            startDate: new Date()
+          }))
       };
 
+      await financialService.updateFinancialData(userId, financialData);
+
+      // Prepare scenario details based on selected scenario
+      let details = {};
+      switch (formData.scenario) {
+        case 'job':
+          details = { newSalary: Number(formData.expectedSalary) || 0 };
+          break;
+        case 'investment':
+          details = {
+            investmentAmount: Number(formData.businessInvestment) || 0,
+            annualReturnRate: 10 // Default return rate
+          };
+          break;
+        case 'purchase':
+          details = { purchaseCost: Number(formData.assetValue) || 0 };
+          break;
+        case 'city':
+          // This is handled as a custom scenario
+          details = {
+            newCity: formData.newCity,
+            expectedRent: Number(formData.cityDetails.expectedRent) || 0,
+            costOfLiving: Number(formData.cityDetails.costOfLiving) || 0
+          };
+          break;
+        case 'business':
+          // This is handled as a custom scenario
+          details = {
+            investment: Number(formData.businessInvestment) || 0,
+            type: formData.businessType
+          };
+          break;
+        case 'asset':
+          // This is handled as a purchase scenario in the backend
+          details = {
+            purchaseCost: Number(formData.assetValue) || 0,
+            assetType: formData.assetType
+          };
+          break;
+        default:
+          break;
+      }
+
+      // Now create the simulation
       const simulationData = {
-        userId,
-        currentState: {
-          monthlyIncome: Number(formData.monthlyIncome) || 0,
-          expenses: Object.fromEntries(
-            Object.entries(formData.expenses).map(([k, v]) => [
-              k,
-              Number(v) || 0,
-            ])
-          ),
-          savings: Number(formData.currentSavings) || 0,
-          investments: Object.fromEntries(
-            Object.entries(formData.currentInvestments).map(([k, v]) => [
-              k,
-              Number(v) || 0,
-            ])
-          ),
-        },
-        futureState: {
-          scenario: formData.scenario,
-          timeline: Number(formData.timeline) || 1,
-          inputs: getScenarioInputs(),
-        },
+        futureState: [{
+          type: formData.scenario,
+          timeline: Number(formData.timeline) * 12, // Convert years to months
+          details
+        }]
       };
-      simulationData()
-    //   const response = await api.post("/simulations", simulationData);
-    //   if (response.data) {
-        // navigate("/results", { state: { simulationId: response.data.id } });
-    //   }
+
+      const response = await simulationService.createSimulation(userId, simulationData);
+      
+      toast.success("Simulation created successfully!");
+      navigate("/results", { state: { simulationId: response._id } });
     } catch (err) {
-      console.error("Simulation error:", err.response?.data || err.message);
+      console.error("Simulation error:", err);
+      toast.error(err.message || "Failed to create simulation");
+    } finally {
+      setLoading(false);
     }
   };
 

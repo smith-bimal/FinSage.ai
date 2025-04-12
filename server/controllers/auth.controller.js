@@ -35,11 +35,7 @@ export const registerUser = async (req, res) => {
         const user = new User({ 
             email, 
             password: hashedPassword,
-            firstName,
-            lastName,
-            name: `${firstName} ${lastName}`, // For backward compatibility
-            phone,
-            address
+            name: `${firstName} ${lastName}`,
         });
         
         await user.save();

@@ -68,11 +68,11 @@ function AppRoutes() {
             </Layout>
           </PrivateRoute>
         }>
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="dashboard/:id" element={<Dashboard />} />
-          <Route path="new-simulation" element={<NewSimulation />} />
-          <Route path="history" element={<History />} />
-          <Route path="results/:simulationId" element={<ResultsPage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/:id" element={<Dashboard />} />
+          <Route path="/new-simulation" element={<NewSimulation />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/results/:simulationId" element={<ResultsPage />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

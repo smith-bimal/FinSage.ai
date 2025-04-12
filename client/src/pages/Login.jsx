@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
-import api from '../config/axios.config.js';
+import { authService } from '../services/auth.service.js';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
   const location = useLocation();
+  const { login } = useAuth();
   const [isSignup, setIsSignup] = useState(location.state?.signup || false);
   const [formData, setFormData] = useState({
     email: '',
@@ -18,6 +20,8 @@ export default function Login() {
     password: '',
     confirmPassword: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,14 +33,65 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
+    setIsLoading(true);
+
     try {
-      const endpoint = isSignup ? '/auth/register' : '/auth/login';
-      const { data } = await api.post(endpoint, formData);
-      localStorage.setItem('userId', data.userId);
-      localStorage.setItem('token', data.token);
-      navigate(isSignup ? '/new-simulation' : '/dashboard');
+      if (isSignup) {
+        // Check if passwords match
+        if (formData.password !== formData.confirmPassword) {
+          setError('Passwords do not match');
+          setIsLoading(false);
+          return;
+        }
+
+        // Registration flow
+        const data = await authService.register({
+          email: formData.email,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phone: formData.phone || '',
+          address: {
+            line1: formData.addressLine1 || '',
+            line2: formData.addressLine2 || '',
+            state: formData.state || '',
+            country: formData.country || '',
+            zipCode: formData.zipCode || ''
+          }
+        });
+
+        // Context login after registration
+        if (data.user && data.token) {
+          console.log("Registration successful, logging in user:", data.user);
+          login(data.user, data.token);
+          // Redirect is now handled in the login function in context
+        } else {
+          console.error("Registration response missing user or token:", data);
+          setError('Registration successful but login failed. Please try logging in.');
+        }
+      } else {
+        // Login flow
+        const data = await authService.login({
+          email: formData.email,
+          password: formData.password
+        });
+        
+        // Context login after authentication
+        if (data.user && data.token) {
+          console.log("Login successful, user data:", data.user);
+          login(data.user, data.token);
+          // Redirect is now handled in the login function in context
+        } else {
+          console.error("Login response missing user or token:", data);
+          setError('Authentication successful but user data is missing. Please try again.');
+        }
+      }
     } catch (err) {
-      console.error('Auth error:', err.response?.data || err.message);
+      console.error('Auth error:', err);
+      setError(err.message || 'Authentication failed. Please check your credentials.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -86,6 +141,12 @@ export default function Login() {
         {/* Form Panel */}
         <div className="p-10 md:w-1/2 bg-gradient-to-br from-gray-900/50 to-black/50">
           <form onSubmit={handleSubmit} className="space-y-6 h-full" autoComplete="off" spellCheck="false">
+            {/* Display error message if present */}
+            {error && (
+              <div className="p-3 bg-red-900/30 border border-red-600/30 rounded-lg text-red-400 text-sm mb-4">
+                {error}
+              </div>
+            )}
             {isSignup ? (
               <>
                 <div className="mb-8">
@@ -233,10 +294,23 @@ export default function Login() {
 
             <button
               type="submit"
-              className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg text-white font-semibold transform hover:scale-[1.01] transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-gray-900 mt-6"
+              disabled={isLoading}
+              className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg text-white font-semibold transform hover:scale-[1.01] transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-gray-900 mt-6 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {isSignup ? 'Create Account' : 'Sign In'}
-              <i className="fas fa-arrow-right ml-2"></i>
+              {isLoading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </span>
+              ) : (
+                <>
+                  {isSignup ? 'Create Account' : 'Sign In'}
+                  <i className="fas fa-arrow-right ml-2"></i>
+                </>
+              )}
             </button>
           </form>
         </div>

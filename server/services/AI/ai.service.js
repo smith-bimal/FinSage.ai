@@ -52,6 +52,7 @@ export async function generateGeminiRecommendations(userId) {
             "yearly": number
           }
         }],
+        "accuracyPercentage": precent between 0-100 depending on the confidence of the AI in its recommendations,
         "behaviorAnalysis": {
           "spendingPatterns": {
             "categories": [{

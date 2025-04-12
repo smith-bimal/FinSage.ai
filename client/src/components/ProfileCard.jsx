@@ -1,26 +1,25 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, TrendingUp, TrendingDown, Calendar, DollarSign, BarChart3 } from 'lucide-react';
+import { ArrowRight, TrendingUp, TrendingDown, Calendar, DollarSign, BarChart3, Clock, Trash2 } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 
 const ProfileCard = ({
-  id,
   name,
   date,
-  thumbnail,
   totalRevenue,
   income,
   expenses,
   status,
   prediction,
   accuracy,
-  onClick
+  onClick,
+  onDelete // Add onDelete prop
 }) => {
   // Animation variants
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
-    hover: { y: -5 }
+    hover: { y: -2 }
   };
 
   // Get prediction icon and color
@@ -47,13 +46,13 @@ const ProfileCard = ({
 
   return (
     <motion.div
-      className="glass-card purple-glow rounded-xl cursor-pointer overflow-hidden"
+      className="glass-card purple-glow rounded-xl overflow-hidden relative"
       variants={cardVariants}
       initial="hidden"
       animate="visible"
       whileHover="hover"
-      transition={{ duration: 0.3 }}
-      onClick={onClick}
+      transition={{ duration: 0.2 }}
+      onClick={onClick} // Move onClick back to the main container
     >
       <div className="relative">
         {/* Top gradient */}
@@ -64,38 +63,41 @@ const ProfileCard = ({
           <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
         </div>
 
+        {/* Delete button - positioned in the top-right corner */}
+        <motion.button
+          onClick={(e) => {
+            e.stopPropagation(); // Ensure this stops propagation
+            onDelete(e);
+          }}
+          className="absolute top-3 right-3 z-10 p-2 rounded-full bg-gray-800/50 hover:bg-red-600/50 text-gray-400 hover:text-white transition-all duration-200"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <Trash2 size={16} />
+        </motion.button>
+
         <div className="p-6">
           <div className="flex flex-col md:flex-row md:items-start gap-4">
-            {/* Thumbnail */}
-            <div className="flex-shrink-0">
-              {/* <div className="relative w-16 h-16 rounded-lg overflow-hidden group">
-                <img 
-                  src={thumbnail} 
-                  alt={name} 
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" 
-                  onError={(e) => {
-                    e.target.src = '/placeholder.svg';
-                  }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-purple-900/60 to-transparent"></div>
-                <div className="absolute bottom-1 right-1">
-                  <div className="flex items-center justify-center w-5 h-5 rounded-full bg-black/50 backdrop-blur-sm text-[10px] font-bold text-white border border-white/20">
-                    {id}
-                  </div>
-                </div>
-              </div> */}
-            </div>
-
             {/* Content */}
             <div className="flex-1 space-y-3">
-              <div className="flex items-start justify-between">
+              <div className="flex items-start">
                 <h3 className="text-lg font-bold text-white/90 group-hover:text-white transition-colors duration-200">
                   {name}
                 </h3>
-                <StatusBadge status={status} />
+                {/* Status badge moved to the top stats row to prevent overlap with delete button */}
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                {/* Added Status Badge as first item in the grid */}
+                <div className="space-y-1">
+                  <div className="flex items-center text-purple-300/70 text-xs font-medium">
+                    <span>Status</span>
+                  </div>
+                  <div className="pt-1">
+                    <StatusBadge status={status} />
+                  </div>
+                </div>
+
                 <div className="space-y-1">
                   <div className="flex items-center text-purple-300/70 text-xs font-medium">
                     <DollarSign className="h-3 w-3 mr-1" />
@@ -108,7 +110,7 @@ const ProfileCard = ({
 
                 <div className="space-y-1">
                   <div className="flex items-center text-purple-300/70 text-xs font-medium">
-                    {predictionDetails.icon}
+                    <Clock className="h-3 w-3 mr-1" />
                     <span>Prediction</span>
                   </div>
                   <p className={`font-medium ${predictionDetails.color}`}>
@@ -151,7 +153,7 @@ const ProfileCard = ({
 
           {/* Bottom action bar */}
           <div className="mt-4 flex justify-end">
-            <motion.div 
+            <motion.div
               className="group flex items-center gap-1 text-sm text-purple-400 hover:text-white transition-colors duration-300 font-medium"
               whileHover={{ x: 3 }}
             >
@@ -161,7 +163,7 @@ const ProfileCard = ({
           </div>
         </div>
       </div>
-    </motion.div>
+    </motion.div >
   );
 };
 

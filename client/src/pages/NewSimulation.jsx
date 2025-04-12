@@ -1,10 +1,11 @@
 /* eslint-disable no-unused-vars */
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { Cpu, ArrowRight, DollarSign, Briefcase, Home, MapPin, TrendingUp, ShoppingBag, Plus, ChevronLeft } from 'lucide-react';
 import { financialService } from "../services/financial.service.js";
 import { simulationService } from "../services/simulation.service.js";
+import Header from '../components/Header';
 
 function NewSimulation() {
   const navigate = useNavigate();
@@ -67,20 +68,24 @@ function NewSimulation() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
-      setLoading(true); // Set loading state to true when submission starts
+      setLoading(true);
       const userId = localStorage.getItem('userId');
-  
+
       if (!userId) {
         console.error("Please login to create a simulation");
         navigate("/login");
         return;
       }
-  
-      // Log that simulation is being created instead of showing toast
+
       console.info("Creating your financial simulation...");
-  
+
+      // Calculate total monthly investments from individual investments
+      const totalMonthlyInvestments = formData.investments
+        .filter(investment => investment.amount.trim() !== '')
+        .reduce((sum, investment) => sum + Number(investment.amount), 0);
+
       const financialData = {
         income: Number(formData.income) || 0,
         savings: Number(formData.savings) || 0,
@@ -100,6 +105,8 @@ function NewSimulation() {
             returnRate: Number(investment.returnRate),
             startDate: investment.startDate
           })),
+        // Explicitly include the calculated monthly investments
+        monthlyInvestments: totalMonthlyInvestments,
         assets: formData.assets
           .filter(asset => asset.name.trim() !== '' && asset.value.trim() !== '')
           .map(asset => ({
@@ -108,10 +115,11 @@ function NewSimulation() {
             purchaseDate: asset.purchaseDate
           }))
       };
-  
+
+      // Update financial data with explicit monthly investments field
       await financialService.updateFinancialData(userId, financialData);
-  
-  
+
+      // Include monthlyInvestments in the scenario details
       let details = {};
       switch (formData.scenario) {
         case 'job':
@@ -120,7 +128,8 @@ function NewSimulation() {
         case 'investment':
           details = {
             investmentAmount: Number(formData.investmentAmount) || 0,
-            annualReturnRate: Number(formData.annualReturnRate) || 10
+            annualReturnRate: Number(formData.annualReturnRate) || 10,
+            monthlyInvestments: totalMonthlyInvestments  // Include here too
           };
           break;
         case 'purchase':
@@ -148,29 +157,35 @@ function NewSimulation() {
         default:
           break;
       }
-  
-  
+
       const simulationData = {
         futureState: [{
           type: formData.scenario,
           timeline: Number(formData.timeline) || 12,
           details
-        }]
+        }],
+        // Include financial summary directly in simulation data
+        financialData: {
+          income: Number(formData.income) || 0,
+          expenses: formData.expenses
+            .filter(expense => expense.amount.trim() !== '')
+            .reduce((sum, expense) => sum + Number(expense.amount), 0),
+          savings: Number(formData.savings) || 0,
+          monthlyInvestments: totalMonthlyInvestments
+        }
       };
-  
+
       const response = await simulationService.createSimulation(userId, simulationData);
-  
+
       console.log("Simulation created successfully!");
-      navigate("/results", { state: { simulationId: response._id } });
+      navigate("/history", { state: { simulationId: response._id } });
     } catch (err) {
       console.error("Simulation error:", err);
-      // Replace toast.error with console.error
       console.error(err.message || "Failed to create simulation");
     } finally {
-      setLoading(false); // Always reset loading state when done
+      setLoading(false);
     }
   };
-
 
   const updateExpense = (index, field, value) => {
     const updatedExpenses = [...formData.expenses];
@@ -184,7 +199,6 @@ function NewSimulation() {
     });
   };
 
-
   const updateInvestment = (index, field, value) => {
     const updatedInvestments = [...formData.investments];
     updatedInvestments[index] = {
@@ -196,7 +210,6 @@ function NewSimulation() {
       investments: updatedInvestments
     });
   };
-
 
   const updateAsset = (index, field, value) => {
     const updatedAssets = [...formData.assets];
@@ -210,7 +223,6 @@ function NewSimulation() {
     });
   };
 
-
   const addAsset = () => {
     setFormData({
       ...formData,
@@ -221,7 +233,6 @@ function NewSimulation() {
     });
   };
 
-
   const scenarioIcons = {
     job: <Briefcase className="h-6 w-6" />,
     investment: <TrendingUp className="h-6 w-6" />,
@@ -231,35 +242,26 @@ function NewSimulation() {
     asset: <Home className="h-6 w-6" />
   };
 
-
   const getStepTitle = () => {
     if (step === 1) return "Your Current Financial Profile";
     if (step === 2) return "Explore Your Financial Future";
     return "";
-  }
+  };
+
+  // Add a calculated monthly investments value to show users the total
+  const calculatedMonthlyInvestments = useMemo(() => {
+    return formData.investments
+      .filter(investment => investment.amount.trim() !== '')
+      .reduce((sum, investment) => sum + Number(investment.amount), 0);
+  }, [formData.investments]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-black via-gray-950 to-gray-950 p-6">
-      <div className="w-full max-w-4xl">
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mr-3">
-              <Cpu className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-white text-xl font-extrabold">
-              Fin<span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Sage.ai</span>
-            </span>
-          </div>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-black via-gray-950 to-gray-950 p-6">
+      <div className="w-full max-w-4xl mx-auto">
+        <Header title="Create New Simulation" />
 
         {/* Progress Steps */}
-        <div className="mb-8 relative">
+        <div className="mb-8 relative mt-6">
           <div className="w-full h-1 bg-gray-800 absolute top-5"></div>
           <div
             className="h-1 bg-gradient-to-r from-purple-600 to-blue-600 absolute top-5 transition-all duration-300"
@@ -271,8 +273,8 @@ function NewSimulation() {
               <div key={stepNumber} className="flex flex-col items-center">
                 <div
                   className={`h-12 w-12 rounded-full flex items-center justify-center font-bold text-lg ${step === stepNumber
-                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
-                      : 'bg-gray-700 text-gray-400'
+                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
+                    : 'bg-gray-700 text-gray-400'
                     }`}
                 >
                   {stepNumber}
@@ -403,6 +405,12 @@ function NewSimulation() {
                         <div className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-gradient-to-r from-green-400 to-blue-400 group-focus-within:w-full transition-all duration-300"></div>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Monthly Investments Total Display */}
+                  <div className="col-span-full mt-2 bg-green-900/20 border border-green-900/30 rounded-lg p-3 flex justify-between items-center">
+                    <span className="text-sm text-gray-300">Total Monthly Investments:</span>
+                    <span className="text-lg font-semibold text-green-400">₹{calculatedMonthlyInvestments.toLocaleString()}</span>
                   </div>
                 </div>
 

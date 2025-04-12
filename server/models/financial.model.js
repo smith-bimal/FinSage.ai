@@ -29,12 +29,18 @@ const financialSchema = new mongoose.Schema({
   expenses: [expenseSchema],
   savings: { type: Number, default: 0 },
   investments: [investmentSchema],
+  monthlyInvestments: { type: Number, default: 0 },
   assets: [assetSchema],
   updatedAt: { type: Date, default: Date.now }
 });
 
 financialSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
+  
+  if (this.investments && this.investments.length > 0) {
+    this.monthlyInvestments = this.investments.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+  }
+  
   next();
 });
 

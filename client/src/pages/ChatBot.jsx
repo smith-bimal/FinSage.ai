@@ -294,7 +294,7 @@ const ChatBot = ({ currentPage, userData }) => {
                 transition={{ type: "spring", stiffness: 300, damping: 24 }}
               >
                 <div className="flex items-center space-x-2">
-                  <img src="logo.jpg" alt="" className="w-8 h-8 rounded-full" />
+                  <img src="/logo.jpg" alt="FinSage" className="w-8 h-8 rounded-full" />
                   <span>FinSage Bot</span>
                 </div>
               </motion.h3>

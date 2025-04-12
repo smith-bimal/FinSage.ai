@@ -1,43 +1,62 @@
 import { useEffect, useState } from "react";
 
-export const FNGSvg = () => {
-    const maxAngle = 123;
-    const priceChange = 650;
-    const percentChange = 25.35;
-    const shiftAngle = (maxAngle / 100) * percentChange;
-
+export const FNGSvg = ({ savingsPercentage = 0, savingsAmount = 0, formatter }) => {
+    // Ensure savingsPercentage is within 0-100
+    const clampedPercentage = Math.min(100, Math.max(0, savingsPercentage));
+    
+    // Set up the angle mapping:
+    // 0% -> 245 degrees (left)
+    // 50% -> 0 degrees (or 360 degrees) (top/middle)
+    // 100% -> 120 degrees (right)
+    
+    let finalAngle;
+    
+    // For percentages from 0 to 50, go from 245 to 360 (or 0)
+    if (clampedPercentage <= 50) {
+        // Linear interpolation: 0% -> 245deg, 50% -> 360deg
+        finalAngle = 245 - ((clampedPercentage / 50) * (245 - 360));
+        
+        // Normalize angle to stay within 0-360 range
+        if (finalAngle >= 360) finalAngle -= 360;
+    } 
+    // For percentages from 50 to 100, go from 0 to 120
+    else {
+        // Linear interpolation: 50% -> 0deg, 100% -> 120deg
+        finalAngle = ((clampedPercentage - 50) / 50) * 120;
+    }
+    
+    // Position the indicator based on percentage
     const [borderColor, setBorderColor] = useState("border-[#F3D42F]");
     const [fngStatus, setFngStatus] = useState("Neutral");
-
     useEffect(() => {
-        if (percentChange < -60) {
+        if (savingsPercentage < 20) {
             setBorderColor("border-[#DF1C41]");
-            setFngStatus("Extreme Fear")
+            setFngStatus("Needs Attention");
         }
-        else if (percentChange >= -60 && percentChange < -20) {
+        else if (savingsPercentage >= 20 && savingsPercentage < 40) {
             setBorderColor("border-[#E59100]");
-            setFngStatus("Fear")
+            setFngStatus("Low");
         }
-        else if (percentChange >= -20 && percentChange < 20) {
+        else if (savingsPercentage >= 40 && savingsPercentage < 60) {
             setBorderColor("border-[#F3D42F]");
-            setFngStatus("Neutral")
+            setFngStatus("Neutral");
         }
-        else if (percentChange >= 20 && percentChange < 60) {
+        else if (savingsPercentage >= 60 && savingsPercentage < 80) {
             setBorderColor("border-[#93D900]");
-            setFngStatus("Greed")
+            setFngStatus("Good");
         }
-        else if (percentChange >= 60) {
+        else if (savingsPercentage >= 80) {
             setBorderColor("border-[#16C784]");
-            setFngStatus("Extreme Greed")
+            setFngStatus("Excellent");
         }
-    }, [percentChange])
+    }, [savingsPercentage]);
 
     return (
         <div className="w-fit mx-auto max-h-72 relative">
             <div
                 style={{
-                    transform: `rotate(${shiftAngle}deg)`,
-                    transformOrigin: '12px 147px',
+                    transform: `rotate(${finalAngle}deg)`,
+                    transformOrigin: '14px 131px',
                 }}
                 className={`h-6 w-6 bg-white rounded-full border-[5px] ${borderColor} absolute left-[140px] top-[5px]`}
             ></div>
@@ -50,40 +69,45 @@ export const FNGSvg = () => {
                 <path d="M666.922 271.438C675.858 268.791 685.291 273.881 687.488 282.938C697.008 322.183 699.418 362.865 694.556 403.046C689.693 443.228 677.649 482.16 659.042 518.001C654.748 526.273 644.373 528.966 636.326 524.264C628.279 519.562 625.613 509.247 629.861 500.951C646.168 469.109 656.742 434.595 661.05 398.992C665.359 363.388 663.323 327.348 655.083 292.536C652.936 283.466 657.986 274.085 666.922 271.438Z" fill="#16C784" />
             </svg>
 
-
-            <p className="absolute bottom-8 left-1/2 -translate-x-1/2 text-sm text-gray-500">Price Change Rate</p>
+            <p className="absolute bottom-8 left-1/2 -translate-x-1/2 text-sm text-gray-500">Savings Rate</p>
 
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-                <p className={`${percentChange > 0 ? "text-[#68dd96]" : "text-[#f74545]"} font-medium`}>
-                    {(percentChange > 0) ? <i className="ri-arrow-right-up-line"></i> : <i className="ri-arrow-right-down-line"></i>}
-                    <span>{(percentChange > 0 ? "+" : "") + percentChange.toFixed(2)}%</span>
+                <p className={clampedPercentage > 0 ? "text-[#68dd96] font-medium" : "text-[#f74545] font-medium"}>
+                    {clampedPercentage > 0 ? <i className="ri-arrow-right-up-line"></i> : <i className="ri-arrow-right-down-line"></i>}
+                    <span>{clampedPercentage.toFixed(2)}%</span>
                 </p>
-                <h1 className="text-4xl font-bold my-2">{priceChange}</h1>
+                <h1 className="text-2xl font-bold my-2">
+                    {formatter ? formatter.format(savingsAmount) : savingsAmount}
+                </h1>
                 <p>{fngStatus}</p>
             </div>
         </div>
-    )
-}
-
+    );
+};
 
 export const FNGLabels = () => {
     return (
-        <div className="flex flex-wrap items-center justify-center gap-8 font-light mt-4">
+        <div className="flex flex-wrap items-center justify-center gap-4 font-light mt-4 text-xs">
             <div className="flex items-center gap-2">
-                <div className="w-1 h-3 rounded-sm bg-[#DF1C41]"></div><span className="font-semibold whitespace-nowrap">Worst</span>
+                <div className="w-1 h-3 rounded-sm bg-[#DF1C41]"></div>
+                <span className="font-semibold whitespace-nowrap">Worst</span>
             </div>
             <div className="flex items-center gap-2">
-                <div className="w-1 h-3 rounded-sm bg-[#E59100]"></div><span className="font-semibold whitespace-nowrap">Poor</span>
+                <div className="w-1 h-3 rounded-sm bg-[#E59100]"></div>
+                <span className="font-semibold whitespace-nowrap">Low</span>
             </div>
             <div className="flex items-center gap-2">
-                <div className="w-1 h-3 rounded-sm bg-[#F3D42F]"></div><span className="font-semibold whitespace-nowrap">Neutral</span>
+                <div className="w-1 h-3 rounded-sm bg-[#F3D42F]"></div>
+                <span className="font-semibold whitespace-nowrap">Neutral</span>
             </div>
             <div className="flex items-center gap-2">
-                <div className="w-1 h-3 rounded-sm bg-[#93D900]"></div><span className="font-semibold whitespace-nowrap">Good</span>
+                <div className="w-1 h-3 rounded-sm bg-[#93D900]"></div>
+                <span className="font-semibold whitespace-nowrap">Good</span>
             </div>
             <div className="flex items-center gap-2">
-                <div className="w-1 h-3 rounded-sm bg-[#16C784]"></div><span className="font-semibold whitespace-nowrap">Strong</span>
+                <div className="w-1 h-3 rounded-sm bg-[#16C784]"></div>
+                <span className="font-semibold whitespace-nowrap">Excellent</span>
             </div>
         </div>
-    )
-}
+    );
+};

@@ -6,6 +6,20 @@ const simulationSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  financialId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Financial'
+  },
+  financialData: {
+    income: Number,
+    expenses: Number,
+    savings: Number,
+    monthlyInvestments: Number
+  },
+  accuracyPercentage: {
+    type: Number,
+    default: 0
+  },
   recommendations: [{
     category: {
       type: String,

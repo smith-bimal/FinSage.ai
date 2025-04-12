@@ -20,15 +20,44 @@ export const fetchUserData = async (req, res) => {
 
 export const registerUser = async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        // Extract all submitted fields
+        const { email, password, firstName, lastName, phone, address } = req.body;
+        
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Email already in use' });
+        }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const user = new User({ name, email, password: hashedPassword });
+        
+        // Create user with all provided fields
+        const user = new User({ 
+            email, 
+            password: hashedPassword,
+            firstName,
+            lastName,
+            name: `${firstName} ${lastName}`, // For backward compatibility
+            phone,
+            address
+        });
+        
         await user.save();
 
+        // Create a token
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-        res.status(201).json({ userId: user._id, message: 'User registered successfully' });
+        
+        // Return token and user object (excluding password)
+        const userToReturn = user.toObject();
+        delete userToReturn.password;
+        
+        res.status(201).json({ 
+            user: userToReturn,
+            token,
+            message: 'User registered successfully' 
+        });
     } catch (error) {
+        console.error('Registration error:', error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -44,8 +73,17 @@ export const loginUser = async (req, res) => {
         if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-        res.json({ userId: user._id, token });
+        
+        // Return user object excluding password
+        const userToReturn = user.toObject();
+        delete userToReturn.password;
+        
+        res.json({ 
+            user: userToReturn,
+            token 
+        });
     } catch (error) {
+        console.error('Login error:', error);
         res.status(500).json({ message: error.message });
     }
 };

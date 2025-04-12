@@ -49,16 +49,7 @@ export default function Login() {
         const data = await authService.register({
           email: formData.email,
           password: formData.password,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          phone: formData.phone || '',
-          address: {
-            line1: formData.addressLine1 || '',
-            line2: formData.addressLine2 || '',
-            state: formData.state || '',
-            country: formData.country || '',
-            zipCode: formData.zipCode || ''
-          }
+          name: formData.firstName + ' ' + formData.lastName,
         });
 
         // Context login after registration
@@ -76,7 +67,7 @@ export default function Login() {
           email: formData.email,
           password: formData.password
         });
-        
+
         // Context login after authentication
         if (data.user && data.token) {
           console.log("Login successful, user data:", data.user);

@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { Cpu, ArrowRight, DollarSign, Briefcase, Home, MapPin, TrendingUp, ShoppingBag, Plus, ChevronLeft } from 'lucide-react';
-import { toast } from 'react-toastify';
 import { financialService } from "../services/financial.service.js";
 import { simulationService } from "../services/simulation.service.js";
 
@@ -30,7 +29,8 @@ function NewSimulation() {
       { type: 'others', amount: '', returnRate: 8, startDate: new Date() }
     ],
     assets: [
-      { name: '', value: '', purchaseDate: new Date() }
+      { name: '', value: '', purchaseDate: new Date() },
+      { name: 'Home', value: '', purchaseDate: new Date() }
     ],
 
 
@@ -73,13 +73,13 @@ function NewSimulation() {
       const userId = localStorage.getItem('userId');
   
       if (!userId) {
-        toast.error("Please login to create a simulation");
+        console.error("Please login to create a simulation");
         navigate("/login");
         return;
       }
   
-      // Show a toast notification that simulation is being created
-      toast.info("Creating your financial simulation...");
+      // Log that simulation is being created instead of showing toast
+      console.info("Creating your financial simulation...");
   
       const financialData = {
         income: Number(formData.income) || 0,
@@ -160,11 +160,12 @@ function NewSimulation() {
   
       const response = await simulationService.createSimulation(userId, simulationData);
   
-      toast.success("Simulation created successfully!");
+      console.log("Simulation created successfully!");
       navigate("/results", { state: { simulationId: response._id } });
     } catch (err) {
       console.error("Simulation error:", err);
-      toast.error(err.message || "Failed to create simulation");
+      // Replace toast.error with console.error
+      console.error(err.message || "Failed to create simulation");
     } finally {
       setLoading(false); // Always reset loading state when done
     }

@@ -70,19 +70,19 @@ export const FNGLabels = () => {
     return (
         <div className="flex flex-wrap items-center justify-center gap-8 font-light mt-4">
             <div className="flex items-center gap-2">
-                <div className="w-1 h-3 rounded-sm bg-[#DF1C41]"></div><span className="font-semibold whitespace-nowrap">Extreme Fear</span>
+                <div className="w-1 h-3 rounded-sm bg-[#DF1C41]"></div><span className="font-semibold whitespace-nowrap">Worst</span>
             </div>
             <div className="flex items-center gap-2">
-                <div className="w-1 h-3 rounded-sm bg-[#E59100]"></div><span className="font-semibold whitespace-nowrap">Fear</span>
+                <div className="w-1 h-3 rounded-sm bg-[#E59100]"></div><span className="font-semibold whitespace-nowrap">Poor</span>
             </div>
             <div className="flex items-center gap-2">
                 <div className="w-1 h-3 rounded-sm bg-[#F3D42F]"></div><span className="font-semibold whitespace-nowrap">Neutral</span>
             </div>
             <div className="flex items-center gap-2">
-                <div className="w-1 h-3 rounded-sm bg-[#93D900]"></div><span className="font-semibold whitespace-nowrap">Greed</span>
+                <div className="w-1 h-3 rounded-sm bg-[#93D900]"></div><span className="font-semibold whitespace-nowrap">Good</span>
             </div>
             <div className="flex items-center gap-2">
-                <div className="w-1 h-3 rounded-sm bg-[#16C784]"></div><span className="font-semibold whitespace-nowrap">Extreme Greed</span>
+                <div className="w-1 h-3 rounded-sm bg-[#16C784]"></div><span className="font-semibold whitespace-nowrap">Strong</span>
             </div>
         </div>
     )

@@ -1,118 +1,119 @@
 import Simulation from '../models/simulation.model.js';
-import { projectFutureSavings, projectInvestmentGrowth } from '../utils/calculator.js';
-import { RetrospectiveService } from '../services/simulation/retrospective.service.js';
-import { Financial } from '../models/financial.model.js';
-import { analyzeJobScenario, analyzeInvestmentScenario, analyzePurchaseScenario } from '../utils/scenario.helper.js';
+import { analyzeBehaviorGemini, generateGeminiRecommendations } from '../services/AI/ai.service.js';
 
 export const createSimulation = async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const simulationData = req.body;
+  try {
+    const { userId } = req.params;
 
-        const simulation = new Simulation({ userId, ...simulationData });
-        await simulation.save();
+    // Step 1: Create the simulation with recommendations first
+    const aiData = await generateGeminiRecommendations(userId);
 
-        res.status(201).json(simulation);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+    const simulation = new Simulation({
+      userId,
+      recommendations: aiData.recommendations,
+      behaviorAnalysis: {
+        spendingPatterns: { categories: [] },
+        savingsBehavior: { consistency: 'initializing', averageSavingsRate: 0 }
+      },
+      chartData: {
+        ...aiData.chartData,
+        historicalTrends: []
+      }
+    });
+
+    // Save the simulation to get an ID
+    await simulation.save();
+
+    // Step 2: Now generate behavior analysis with both IDs available
+    const behaviorData = await analyzeBehaviorGemini(userId, simulation._id);
+
+    // Step 3: Update the simulation with behavior data
+    simulation.behaviorAnalysis = behaviorData.behaviorAnalysis;
+    simulation.chartData.historicalTrends = behaviorData.historicalAnalysis?.trends || [];
+    simulation.pastDecisionsImpact = behaviorData.pastDecisionsImpact || {
+      positiveImpacts: [],
+      negativeImpacts: [],
+      suggestions: []
+    };
+
+    await simulation.save();
+
+    res.status(201).json({ simulationId: simulation._id, message: 'Simulation created successfully', simulation });
+  } catch (error) {
+    console.error('Error creating simulation:', error);
+    res.status(500).json({ message: error.message });
+  }
 };
 
-export const getSimulationResults = async (req, res) => {
-    try {
-        const { simulationId } = req.params;
-        const simulation = await Simulation.findById(simulationId);
-        if (!simulation) return res.status(404).json({ message: 'Simulation not found' });
+export const getSimulationWithBehavior = async (req, res) => {
+  try {
+    const { userId, simulationId } = req.params;
 
-        res.json(simulation.results);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+    // Find the specific simulation using both userId and simulationId
+    const simulation = await Simulation.findById(simulationId).where({ userId });
+
+    if (!simulation) {
+      return res.status(404).json({ message: 'Simulation not found' });
     }
+
+    // Pass both IDs to the behavior analysis function
+    const behaviorData = await analyzeBehaviorGemini(userId, simulationId);
+
+    // Update simulation with latest behavior
+    simulation.behaviorAnalysis = behaviorData.behaviorAnalysis;
+    simulation.chartData.historicalTrends = behaviorData.historicalAnalysis?.trends || [];
+    simulation.pastDecisionsImpact = behaviorData.pastDecisionsImpact || {
+      positiveImpacts: [],
+      negativeImpacts: [],
+      suggestions: []
+    };
+
+    await simulation.save();
+
+    res.status(201).json(behaviorData);
+  } catch (error) {
+    console.error('Error updating simulation with behavior:', error);
+    res.status(500).json({ message: error.message });
+  }
 };
 
-export const getSimulationProjections = async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const { months, annualReturnRate } = req.body;
-
-        const financialData = await Financial.findOne({ userId });
-        if (!financialData) {
-            return res.status(404).json({ message: 'Financial data not found' });
-        }
-
-        const projectedSavings = projectFutureSavings(
-            financialData.savings,
-            financialData.income * 0.3, // Assuming 30% of income is saved monthly
-            months
-        );
-
-        const projectedInvestments = projectInvestmentGrowth(
-            financialData.investments.reduce((sum, inv) => sum + inv.amount, 0),
-            financialData.income * 0.2, // Assuming 20% of income is invested monthly
-            annualReturnRate,
-            months / 12 // Convert months to years
-        );
-
-        res.json({
-            projectedSavings,
-            projectedInvestments,
-            timeline: months
-        });
-    } catch (error) {
-        console.error('Error generating projections:', error);
-        res.status(500).json({ message: error.message });
-    }
+export const getSimulations = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const simulations = await Simulation.find({ userId });
+    res.json(simulations);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
-export const analyzeScenario = async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const { scenarioType, details } = req.body;
+export const updateSimulation = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
 
-        const financialData = await Financial.findOne({ userId });
-        if (!financialData) {
-            return res.status(404).json({ message: 'Financial data not found' });
-        }
-
-        let analysis = {};
-
-        switch (scenarioType) {
-            case 'job':
-                analysis = analyzeJobScenario(financialData, details);
-                break;
-            case 'investment':
-                analysis = analyzeInvestmentScenario(financialData, details);
-                break;
-            case 'purchase':
-                analysis = analyzePurchaseScenario(financialData, details);
-                break;
-            default:
-                return res.status(400).json({ message: 'Invalid scenario type' });
-        }
-
-        res.json({
-            scenarioType,
-            analysis
-        });
-    } catch (error) {
-        console.error('Error analyzing scenario:', error);
-        res.status(500).json({ message: error.message });
+    const simulation = await Simulation.findByIdAndUpdate(id, updates, { new: true });
+    if (!simulation) {
+      return res.status(404).json({ message: 'Simulation not found' });
     }
+
+    res.json(simulation);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
-export const analyzeHistoricalDecisions = async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const { startDate } = req.body;
+export const deleteSimulation = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-        const retrospectiveAnalysis = await RetrospectiveService.analyzeHistoricalDecisions(userId, startDate);
-
-        res.json({
-            success: true,
-            retrospectiveAnalysis
-        });
-    } catch (error) {
-        console.error('Error analyzing historical decisions:', error);
-        res.status(500).json({ message: error.message });
+    const simulation = await Simulation.findByIdAndDelete(id);
+    if (!simulation) {
+      return res.status(404).json({ message: 'Simulation not found' });
     }
+
+    res.json({ message: 'Simulation deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };

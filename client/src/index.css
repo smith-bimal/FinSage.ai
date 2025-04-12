@@ -7,6 +7,7 @@
   font-family: "Poppins", sans-serif;
 }
 
+<<<<<<< HEAD
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -121,4 +122,44 @@
   body {
     @apply bg-background text-foreground;
   }
+=======
+/* Add these styles to your existing CSS file */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  appearance: none;
+}
+
+::-webkit-scrollbar-track {
+  background: linear-gradient(
+    180deg,
+    rgb(0, 0, 0),
+    rgb(17, 1, 26)
+  );
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgba(139, 92, 246, 0.4),
+    rgba(59, 130, 246, 0.4)
+  );
+  border-radius: 10px;
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(139, 92, 246, 0.6),
+    rgba(59, 130, 246, 0.6)
+  );
+}
+
+/* For Firefox */
+.finsage-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.4) transparent;
+>>>>>>> 493478d7fbc0222fa0fb3b226475e616fceed56d
 }

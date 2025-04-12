@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router';
 import api from '../config/axios.config.js';
 
 export default function Login() {
-  const [isSignup, setIsSignup] = useState(false);
+  const location = useLocation();
+  const [isSignup, setIsSignup] = useState(location.state?.signup || false);
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
@@ -19,12 +20,19 @@ export default function Login() {
   });
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // Update isSignup state if navigated with state
+    if (location.state?.signup !== undefined) {
+      setIsSignup(location.state.signup);
+    }
+  }, [location]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const endpoint = isSignup ? '/auth/signup' : '/auth/login';
+      const endpoint = isSignup ? '/auth/register' : '/auth/login';
       const { data } = await api.post(endpoint, formData);
-      localStorage.setItem('userId', data.user.id);
+      localStorage.setItem('userId', data.userId);
       localStorage.setItem('token', data.token);
       navigate(isSignup ? '/new-simulation' : '/dashboard');
     } catch (err) {
@@ -33,7 +41,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-950 via-purple-950 to-gray-950 p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-black to-[#211225] p-6">
       <div className="flex flex-col md:flex-row bg-black/20 backdrop-blur-xl rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] border border-gray-800/50 overflow-hidden max-w-6xl w-full min-h-[600px]">
         {/* Left Panel */}
         <div className="relative p-10 md:w-1/2 bg-gradient-to-br from-gray-900/60 to-gray-800/40 flex flex-col justify-end">
@@ -45,12 +53,12 @@ export default function Login() {
               {isSignup ? "Smart Financial Insights" : "Let's Continue"}
             </h1>
             <p className="text-lg text-gray-400 leading-relaxed">
-              {isSignup 
-                ? "Make better business decisions with our powerful simulation tools." 
+              {isSignup
+                ? "Make better business decisions with our powerful simulation tools."
                 : "Your financial insights await."
               }
             </p>
-            
+
             <div className="flex items-center space-x-6 pt-8">
               {["facebook", "instagram", "linkedin", "twitter"].map((social) => (
                 <a
@@ -62,8 +70,8 @@ export default function Login() {
                 </a>
               ))}
             </div>
-            
-            <button 
+
+            <button
               onClick={() => setIsSignup(!isSignup)}
               className="group text-gray-400 hover:text-gray-300 transition-colors duration-300 mt-4"
             >
@@ -151,14 +159,14 @@ export default function Login() {
                 {/* Social Login Section */}
                 <div className="pt-6 mt-8 border-t border-gray-800">
                   <div className="text-center mb-6 text-gray-500">Or sign up with</div>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-4 text-white">
                     {["Google", "Apple", "Github"].map((provider) => (
                       <button
                         key={provider}
                         type="button"
-                        className="p-2 border border-gray-700 rounded-lg hover:border-gray-600 hover:bg-gray-800/30 transition-all duration-300"
+                        className="p-2 cursor-pointer border border-gray-700 rounded-lg hover:border-gray-600 hover:bg-gray-800/30 transition-all duration-300"
                       >
-                        <i className={`fab fa-${provider.toLowerCase()}`}></i>
+                        <i className={`ri-${provider.toLowerCase()}-fill text-xl mr-2`}></i>{provider}
                       </button>
                     ))}
                   </div>
@@ -208,14 +216,14 @@ export default function Login() {
 
                 <div className="pt-6 mt-8 border-t border-gray-800">
                   <div className="text-center mb-6 text-gray-500">Or continue with</div>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-4 text-white">
                     {["Google", "Apple", "Github"].map((provider) => (
                       <button
                         key={provider}
                         type="button"
-                        className="p-2 border border-gray-700 rounded-lg hover:border-gray-600 hover:bg-gray-800/30 transition-all duration-300"
+                        className="p-2 cursor-pointer border border-gray-700 rounded-lg hover:border-gray-600 hover:bg-gray-800/30 transition-all duration-300"
                       >
-                        <i className={`fab fa-${provider.toLowerCase()}`}></i>
+                        <i className={`ri-${provider.toLowerCase()}-fill text-xl mr-2`}></i>{provider}
                       </button>
                     ))}
                   </div>

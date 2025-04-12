@@ -1,28 +1,14 @@
 import React from "react";
-import { motion } from "framer-motion";
 import { FaStar } from "react-icons/fa";
 import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  BarChart,
-  Bar,
-} from "recharts";
+  PieChart,
+  pieArcLabelClasses,
+  LineChart as MuiLineChart,
+  lineElementClasses,
+  axisClasses,
+} from "@mui/x-charts";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 const Dashboard = () => {
   const expenseBreakdown = [
@@ -47,50 +33,58 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
-      <motion.div
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="flex justify-between items-center mb-8"
-      >
+      <div className="flex justify-between items-center mb-8">
         <div className="flex items-center">
           <FaStar className="text-2xl text-blue-600" />
           <h1 className="text-2xl font-bold ml-3">Financial Dashboard</h1>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium"
-        >
+        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-transform transform hover:scale-105 active:scale-95 cursor-pointer">
           New Simulation
-        </motion.button>
-      </motion.div>
+        </button>
+      </div>
 
       <div className="grid grid-cols-12 gap-6">
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="col-span-12 grid grid-cols-3 gap-6"
-        >
+        <div className="col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
             <h3 className="text-gray-400 mb-2">Total Revenue</h3>
-            <p className="text-2xl font-bold mb-4">
+            <p className="text-2xl font-bold mb-4 text-white">
               $
               {(
                 incomeVsExpenses[0].amount - incomeVsExpenses[1].amount
-              ).toLocaleString()}
+              ).toLocaleString()} 
             </p>
             <div className="h-24">
-              <ResponsiveContainer>
-                <LineChart data={shortTermData}>
-                  <Line
-                    type="monotone"
-                    dataKey="actual"
-                    stroke="#4ade80"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <MuiLineChart
+                xAxis={[
+                  {
+                    data: shortTermData.map((d) => d.date),
+                    scaleType: "point",
+                    tickLabelStyle: { fill: "#ffffff" },
+                  },
+                ]}
+                series={[
+                  {
+                    data: shortTermData.map((d) => d.actual),
+                    color: "#4ade80", 
+                    showMark: false,
+                  },
+                ]}
+                height={100}
+                grid={{ horizontal: false }}
+                margin={{ top: 10, bottom: 20, left: 30, right: 10 }}
+                sx={{
+                  backgroundColor: "#1f2937", 
+                  "& .MuiChartsAxis-root .MuiChartsAxis-tickLabel": {
+                    fill: "#ffffff",
+                  },
+                  "& .MuiChartsAxis-line": {
+                    stroke: "#ffffff",
+                  },
+                  "& .MuiChartsLine-root path": {
+                    stroke: "#4ade80", 
+                  },
+                }}
+              />
             </div>
           </div>
 
@@ -122,14 +116,9 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="col-span-12 lg:col-span-4 bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700"
-        >
+        <div className="col-span-12 lg:col-span-4 bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
           <h2 className="text-xl font-bold mb-6">Fear & Greed Index</h2>
           <div className="w-48 h-48 mx-auto">
             <CircularProgressbar
@@ -142,120 +131,98 @@ const Dashboard = () => {
               })}
             />
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="col-span-12 lg:col-span-8 bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700"
-        >
+        <div className="col-span-12 lg:col-span-8 bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
           <h2 className="text-xl font-bold mb-6 text-white">
             Expense Breakdown
           </h2>
-
-            <CardHeader>
-              <CardTitle className="text-white">Expenses by Category</CardTitle>
-              <CardDescription>
-                Based on your credit and debit cards
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="w-full h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={expenseBreakdown}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2d3748" />
-                    <XAxis dataKey="category" stroke="#cbd5e0" />
-                    <YAxis stroke="#cbd5e0" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "rgba(0, 0, 0, 0.8)",
-                        border: "none",
-                        borderRadius: "8px",
-                        color: "#fff",
-                      }}
-                    />
-                    <Bar
-                      dataKey="amount"
-                      fill="#60a5fa"
-                      radius={[4, 4, 0, 0]}
-                      barSize={40}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-            <div className="px-6 pb-4 text-sm text-gray-400">
-              <p>Expenses increased by 5.2% compared to last month.</p>
-              <p className="mt-1">Tracking over the past 6 months.</p>
-            </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="col-span-12 bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700"
-        >
-          <h2 className="text-xl font-bold mb-4">Financial Projections</h2>
-          <div className="h-80">
-            <ResponsiveContainer>
-              <AreaChart data={shortTermData}>
-                <defs>
-                  <linearGradient
-                    id="actualGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="5%" stopColor="#4ade80" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#4ade80" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient
-                    id="recommendedGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#60a5fa" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="rgba(255,255,255,0.1)"
-                />
-                <XAxis dataKey="date" stroke="#fff" />
-                <YAxis stroke="#fff" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "rgba(0,0,0,0.8)",
-                    borderColor: "rgba(255,255,255,0.1)",
-                    borderRadius: "8px",
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="actual"
-                  stroke="#4ade80"
-                  fillOpacity={1}
-                  fill="url(#actualGradient)"
-                  name="Actual Growth"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="recommended"
-                  stroke="#60a5fa"
-                  fillOpacity={1}
-                  fill="url(#recommendedGradient)"
-                  name="Recommended Path"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="flex justify-center items-center h-72">
+            <PieChart
+              series={[
+                {
+                  data: expenseBreakdown.map((item) => ({
+                    id: item.category,
+                    value: item.amount,
+                    label: item.category,
+                  })),
+                  innerRadius: 50,
+                  outerRadius: 100,
+                  arcLabel: (item) => `$${item.value}`,
+                },
+              ]}
+              width={500}
+              height={300}
+              slotProps={{
+                legend: {
+                  direction: "column",
+                  position: { vertical: "right", horizontal: "right" },
+                  padding: 5,
+                },
+              }}
+              sx={{
+                backgroundColor: "#1f2937",
+                [`& .${pieArcLabelClasses.root}`]: {
+                  fill: "#fff",
+                  fontSize: 14,
+                },
+                "& .MuiChartsLegend-label": {
+                  fill: "#fff",
+                },
+              }}
+            />
           </div>
-        </motion.div>
+          <div className="pt-4 text-sm text-gray-400">
+            <p>Expenses increased by 5.2% compared to last month.</p>
+            <p className="mt-1">Tracking over the past 6 months.</p>
+          </div>
+        </div>
+
+        <div className="col-span-12 bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+          <h2 className="text-xl font-bold mb-4 text-white">
+            Financial Projections
+          </h2>
+          <div className="h-80">
+            <MuiLineChart
+              xAxis={[
+                {
+                  data: shortTermData.map((d) => d.date),
+                  scaleType: "band",
+                  tickLabelStyle: { fill: "#fff" },
+                },
+              ]}
+              series={[
+                {
+                  data: shortTermData.map((d) => d.actual),
+                  label: "Actual",
+                  color: "#4ade80",
+                },
+                {
+                  data: shortTermData.map((d) => d.recommended),
+                  label: "Recommended",
+                  color: "#60a5fa",
+                },
+              ]}
+              height={300}
+              grid={{ horizontal: true }}
+              sx={{
+                backgroundColor: "#1f2937",
+                [`& .${axisClasses.root}`]: {
+                  stroke: "white",
+                },
+                [`& .${axisClasses.tickLabel}`]: {
+                  fill: "#fff",
+                },
+                [`& .${lineElementClasses.root}`]: {
+                  strokeWidth: 3,
+                },
+                "& .MuiChartsLegend-root": {
+                  color: "#fff",
+                },
+              }}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React from "react";
 import { Line } from "react-chartjs-2";
-import { Tabs, Tab } from "@mui/material";
 import { Loader, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 

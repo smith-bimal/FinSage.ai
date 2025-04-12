@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { CircularProgress } from '@mui/material';
 import api from '../config/axios.config.js';
 
 function ResultsPage() {

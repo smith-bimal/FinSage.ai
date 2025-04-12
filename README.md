@@ -21,6 +21,7 @@ A complete MERN-based solution that integrates intelligent decision-making with 
 
 ## Directory Structure
 
+```
 xto10x-3/
 ├─ client/
 │ ├─ public/
@@ -137,14 +138,20 @@ xto10x-3/
 │ └─ package.json
 ├─ .gitignore
 └─ README.md
+```
 
 ## Glimpse and Screenshots of our Cloned Website:
+Landing Page
+![Landing page](<uploads/landing page.png>)
 
-![Landing Page](xto10x-3/uploads/landing page.png)
-![Auth Page](xto10x-3/uploads/auth page.png)
-![Dashboard page](xto10x-3/uploads/Dashboard.png)
-![History page](xto10x-3/uploads/history page.png)
+Auth page
+![alt text](<uploads/auth page.png>)
 
+Dashboard Page
+![alt text](uploads/Dashboard.png)
+
+History page
+![alt text](<uploads/history page.png>)
 
 ## Features
 
@@ -159,8 +166,7 @@ xto10x-3/
 
 ### Core Stack:
 
-- **HTML5, CSS3, JavaScript**
-- **MongoDB, Express.js, React.js, Node.js** (MERN Stack)
+- **MongoDB, Express.js, React.js, Node.js, GenAI, JWT, React charts** (MERN Stack)
 
 ### Frontend:
 
@@ -229,10 +235,11 @@ cd finsage-ai
 Fire up the local host for both
 
 ## Contributors
-
-| Name           | GitHub Profile                                       |
-|----------------|------------------------------------------------------|
-| Smith Bimal     | [@smith-bimal](https://github.com/smith-bimal)         |
+___________________________________________________________________________
+| Name           | GitHub                                                  |   
+|--------------------------------------------------------------------------|
+| Smith Bimal     | [@smith-bimal](https://github.com.smith-bimal)         |
 | Raj Ghosh       | [@Rajghosh786](https://github.com/Rajghosh786)         |
 | Ankith Mandal   | [@ankithmandal09](https://github.com/ankithmandal09)   |
+___________________________________________________________________________
 

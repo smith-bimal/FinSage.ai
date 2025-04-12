@@ -105,13 +105,13 @@ const Header = ({ scrollY }) => {
             className="hidden md:flex items-center gap-2 glass-card px-3 py-2 rounded-full cursor-pointer"
             whileHover={{ scale: 1.02 }}
           >
-            {/* <div className="h-8 w-8 rounded-full overflow-hidden border border-purple-500/30">
+            <div className="h-8 w-8 rounded-full overflow-hidden border border-purple-500/30">
               <img 
                 src="https://randomuser.me/api/portraits/men/44.jpg" 
                 alt="User Avatar" 
                 className="h-full w-full object-cover"
               />
-            </div> */}
+            </div>
             <span className="text-sm font-medium text-white/90">John Doe</span>
           </motion.div>
 

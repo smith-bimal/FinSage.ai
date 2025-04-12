@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router';
-import Dashboard from './pages/Dashboard';
+import Dashboard from './components/Dashboard';
 import NewSimulation from './pages/NewSimulation';
 import Login from './pages/Login';
 import Layout from './components/Layout';
@@ -17,6 +17,14 @@ function App() {
   return (
 
     <Routes>
+<<<<<<< HEAD
+      {/* <Route path="/login" element={<Login />} /> */}
+      {/* <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}> */}
+        <Route index element={<Navigate to="/dashboard" />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="new-simulation" element={<SimulationWizard />} />
+        <Route path="results/:simulationId" element={<ResultsPage />} />
+=======
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login />} />
       {/* <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}> */}
@@ -25,6 +33,7 @@ function App() {
       <Route path="/new-simulation" element={<NewSimulation />} />
       <Route path="/results/:simulationId" element={<ResultsPage />} />
       <Route path="/*" element={<NotFound />} />
+>>>>>>> 493478d7fbc0222fa0fb3b226475e616fceed56d
       {/* </Route> */}
     </Routes>
   );

@@ -1,30 +1,44 @@
 import Simulation from '../models/simulation.model.js';
-import { Financial } from '../models/financial.model.js';
 import { analyzeBehaviorGemini, generateGeminiRecommendations } from '../services/AI/ai.service.js';
 
 export const createSimulation = async (req, res) => {
   try {
     const { userId } = req.params;
-    
-    // Get both AI recommendations and behavior analysis
-    const [aiData, behaviorData] = await Promise.all([
-      generateGeminiRecommendations(userId),
-      analyzeBehaviorGemini(userId)
-    ]);
 
-    // Combine the data
+    // Step 1: Create the simulation with recommendations first
+    const aiData = await generateGeminiRecommendations(userId);
+
     const simulation = new Simulation({
       userId,
       recommendations: aiData.recommendations,
-      behaviorAnalysis: behaviorData.behaviorAnalysis,
+      behaviorAnalysis: {
+        spendingPatterns: { categories: [] },
+        savingsBehavior: { consistency: 'initializing', averageSavingsRate: 0 }
+      },
       chartData: {
         ...aiData.chartData,
-        historicalTrends: behaviorData.historicalAnalysis?.trends || []
+        historicalTrends: []
       }
     });
 
+    // Save the simulation to get an ID
     await simulation.save();
-    res.status(201).json(simulation);
+
+    // Step 2: Now generate behavior analysis with both IDs available
+    const behaviorData = await analyzeBehaviorGemini(userId, simulation._id);
+
+    // Step 3: Update the simulation with behavior data
+    simulation.behaviorAnalysis = behaviorData.behaviorAnalysis;
+    simulation.chartData.historicalTrends = behaviorData.historicalAnalysis?.trends || [];
+    simulation.pastDecisionsImpact = behaviorData.pastDecisionsImpact || {
+      positiveImpacts: [],
+      negativeImpacts: [],
+      suggestions: []
+    };
+
+    await simulation.save();
+
+    res.status(201).json({ simulationId: simulation._id, message: 'Simulation created successfully', simulation });
   } catch (error) {
     console.error('Error creating simulation:', error);
     res.status(500).json({ message: error.message });
@@ -33,23 +47,32 @@ export const createSimulation = async (req, res) => {
 
 export const getSimulationWithBehavior = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const simulation = await Simulation.findOne({ userId }).sort({ createdAt: -1 });
-    
+    const { userId, simulationId } = req.params;
+
+    // Find the specific simulation using both userId and simulationId
+    const simulation = await Simulation.findById(simulationId).where({ userId });
+
     if (!simulation) {
-      return res.status(404).json({ message: 'No simulation found' });
+      return res.status(404).json({ message: 'Simulation not found' });
     }
 
-    // Get fresh behavior analysis
-    const behaviorData = await analyzeBehaviorGemini(userId);
-    
+    // Pass both IDs to the behavior analysis function
+    const behaviorData = await analyzeBehaviorGemini(userId, simulationId);
+
     // Update simulation with latest behavior
     simulation.behaviorAnalysis = behaviorData.behaviorAnalysis;
     simulation.chartData.historicalTrends = behaviorData.historicalAnalysis?.trends || [];
+    simulation.pastDecisionsImpact = behaviorData.pastDecisionsImpact || {
+      positiveImpacts: [],
+      negativeImpacts: [],
+      suggestions: []
+    };
+
     await simulation.save();
 
-    res.json(simulation);
+    res.status(201).json(behaviorData);
   } catch (error) {
+    console.error('Error updating simulation with behavior:', error);
     res.status(500).json({ message: error.message });
   }
 };

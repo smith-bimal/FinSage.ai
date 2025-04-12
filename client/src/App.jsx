@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import ResultsPage from './pages/ResultsPage';
 import LandingPage from './pages/LandingPage';
 import History from './pages/History';
+import NotFound from './pages/NotFound';
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -23,6 +24,7 @@ function App() {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/new-simulation" element={<NewSimulation />} />
       <Route path="/results/:simulationId" element={<ResultsPage />} />
+      <Route path="/*" element={<NotFound />} />
       {/* </Route> */}
     </Routes>
   );

@@ -30,9 +30,9 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const endpoint = isSignup ? '/auth/signup' : '/auth/login';
+      const endpoint = isSignup ? '/auth/register' : '/auth/login';
       const { data } = await api.post(endpoint, formData);
-      localStorage.setItem('userId', data.user.id);
+      localStorage.setItem('userId', data.userId);
       localStorage.setItem('token', data.token);
       navigate(isSignup ? '/new-simulation' : '/dashboard');
     } catch (err) {

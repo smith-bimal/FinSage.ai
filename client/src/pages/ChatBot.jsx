@@ -1,13 +1,14 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import {Cpu} from "lucide-react";
 // Initialize the API with environment variable
+
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 const chatBotVariants = {
   hidden: { scale: 0, opacity: 0 },
-  visible: { 
-    scale: 1, 
+  visible: {
+    scale: 1,
     opacity: 1,
     transition: {
       type: "spring",
@@ -19,9 +20,9 @@ const chatBotVariants = {
 
 const containerVariants = {
   hidden: { opacity: 0, y: 50, scale: 0.95 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
+  visible: {
+    opacity: 1,
+    y: 0,
     scale: 1,
     transition: {
       type: "spring",
@@ -30,21 +31,21 @@ const containerVariants = {
       staggerChildren: 0.07
     }
   },
-  exit: { 
-    opacity: 0, 
-    y: 30, 
+  exit: {
+    opacity: 0,
+    y: 30,
     scale: 0.95,
-    transition: { 
+    transition: {
       duration: 0.2,
-      ease: "easeOut" 
+      ease: "easeOut"
     }
   }
 };
 
 const messageVariants = {
   hidden: { opacity: 0, x: -20 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     x: 0,
     transition: {
       type: "spring",
@@ -54,11 +55,21 @@ const messageVariants = {
   }
 };
 
-const ChatBot = () => {
+// Accept context as a prop
+const ChatBot = ({ currentPage, userData }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([
+    {
+      text: "Hello! I'm your FinSage assistant. I can help with financial questions, investment advice, or explain financial concepts. How can I assist you today?",
+      sender: 'bot',
+      timestamp: new Date().toLocaleTimeString(),
+    }
+  ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [typingText, setTypingText] = useState('');
+  const [fullResponse, setFullResponse] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const chatContainerRef = useRef(null);
 
   const toggleChat = () => {
@@ -75,7 +86,27 @@ const ChatBot = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = async () => {
+  // Load chat history on initial render
+  useEffect(() => {
+    const savedMessages = localStorage.getItem('finSageChatHistory');
+    if (savedMessages) {
+      try {
+        const parsedMessages = JSON.parse(savedMessages);
+        setMessages(parsedMessages);
+      } catch (e) {
+        console.error('Error parsing saved messages:', e);
+      }
+    }
+  }, []);
+
+  // Save messages when they change
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem('finSageChatHistory', JSON.stringify(messages.slice(-20)));
+    }
+  }, [messages]);
+
+  const handleSend = async (retryCount = 0) => {
     if (!input.trim()) return;
 
     const userMessage = {
@@ -90,11 +121,37 @@ const ChatBot = () => {
 
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-      
-      // Add safety settings and proper prompt formatting
-      const prompt = input.trim();
+
+      // Create conversation history for context
+      const conversationHistory = messages.slice(-6).map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.text }]
+      }));
+
+      // Add the new user message
+      conversationHistory.push({
+        role: 'user',
+        parts: [{ text: input.trim() }]
+      });
+
+      // Add context to prompt
+      let contextPrompt = "You are FinSage, a helpful financial assistant. You only give short answers maximum 10 sentences.";
+
+      if (currentPage === 'dashboard') {
+        contextPrompt += " The user is currently viewing their financial dashboard.";
+      } else if (currentPage === 'investments') {
+        contextPrompt += " The user is looking at their investment portfolio.";
+      }
+
+      if (userData?.financialGoals) {
+        contextPrompt += ` Their financial goals include: ${userData.financialGoals.join(', ')}.`;
+      }
+
+      const userPrompt = input.trim();
+      const fullPrompt = `${contextPrompt}\n\nUser: ${userPrompt}`;
+
       const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        contents: conversationHistory,
         generationConfig: {
           temperature: 0.7,
           topK: 40,
@@ -124,24 +181,58 @@ const ChatBot = () => {
       const response = await result.response;
       const text = response.text();
 
-      const botMessage = {
-        text: text,
-        sender: 'bot',
-        timestamp: new Date().toLocaleTimeString(),
-      };
-
-      setMessages(prev => [...prev, botMessage]);
+      simulateTyping(text);
     } catch (error) {
       console.error('Error details:', error);
-      const errorMessage = {
-        text: `Error: ${error.message || "Something went wrong. Please try again."}`,
+
+      // Retry logic for network issues
+      if (retryCount < 2 && error.message?.includes('network')) {
+        setTimeout(() => handleSend(retryCount + 1), 1000);
+        return;
+      }
+
+      // Friendly error messages based on error type
+      let errorMessage = "Something went wrong. Please try again.";
+      if (error.message?.includes('quota')) {
+        errorMessage = "We've hit our API limit. Please try again in a few minutes.";
+      } else if (error.message?.includes('network')) {
+        errorMessage = "Network connection issue. Please check your internet.";
+      }
+
+      setMessages(prev => [...prev, {
+        text: `Error: ${errorMessage}`,
         sender: 'bot',
         timestamp: new Date().toLocaleTimeString(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      }]);
     }
 
     setIsLoading(false);
+  };
+
+  const simulateTyping = (text) => {
+    setIsTyping(true);
+    setFullResponse(text);
+    setTypingText('');
+
+    let i = 0;
+    const typeInterval = setInterval(() => {
+      if (i < text.length) {
+        setTypingText(prev => prev + text.charAt(i));
+        i++;
+      } else {
+        clearInterval(typeInterval);
+        setIsTyping(false);
+
+        // Add the complete message once typing is done
+        const botMessage = {
+          text,
+          sender: 'bot',
+          timestamp: new Date().toLocaleTimeString(),
+        };
+
+        setMessages(prev => [...prev, botMessage]);
+      }
+    }, 30); // Adjust speed as needed
   };
 
   const handleKeyPress = (e) => {
@@ -159,7 +250,7 @@ const ChatBot = () => {
         variants={chatBotVariants}
         initial="hidden"
         animate="visible"
-        whileHover={{ 
+        whileHover={{
           scale: 1.1,
           boxShadow: "0 0 25px rgba(139, 92, 246, 0.4)"
         }}
@@ -190,28 +281,45 @@ const ChatBot = () => {
               background: 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0))',
             }}
           >
-            <motion.div 
+            <motion.div
               className="p-3 bg-gradient-to-r from-purple-600/50 to-blue-600/50 backdrop-blur-xl rounded-t-lg border-b border-white/10"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              <motion.h3 
+              <motion.h3
                 className="text-white text-sm font-semibold"
                 initial={{ x: -20 }}
                 animate={{ x: 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 24 }}
               >
                 <div className="flex items-center space-x-2">
-                  <Cpu className="h-4 w-4 text-white" />
+                  <img src="logo.jpg" alt="" className="w-8 h-8 rounded-full" />
                   <span>FinSage Bot</span>
                 </div>
               </motion.h3>
+              <motion.button
+                onClick={() => {
+                  setMessages([{
+                    text: "Chat history cleared. How can I help you today?",
+                    sender: 'bot',
+                    timestamp: new Date().toLocaleTimeString(),
+                  }]);
+                  localStorage.removeItem('finSageChatHistory');
+                }}
+                className="absolute top-3 right-3 text-white/50 hover:text-white/80"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </motion.button>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               ref={chatContainerRef}
-              className="h-[300px] overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-purple-600/30 scrollbar-track-white/5"
+              className="h-[300px] overflow-y-auto overflow-x-hidden p-3 space-y-3 finsage-scrollbar"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
@@ -229,11 +337,10 @@ const ChatBot = () => {
                   className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <motion.div
-                    className={`max-w-[80%] p-2 rounded-lg backdrop-blur-xl shadow-lg ${
-                      message.sender === 'user'
-                        ? 'bg-gradient-to-r from-purple-600/40 to-blue-600/40 text-white border border-white/10'
-                        : 'bg-white/10 text-gray-200 border border-white/5'
-                    }`}
+                    className={`max-w-[80%] p-2 rounded-lg backdrop-blur-xl shadow-lg ${message.sender === 'user'
+                      ? 'bg-gradient-to-r from-purple-600/40 to-blue-600/40 text-white border border-white/10'
+                      : 'bg-white/10 text-gray-200 border border-white/5'
+                      }`}
                     whileHover={{ scale: 1.01 }}
                     transition={{ type: "spring", stiffness: 300, damping: 24 }}
                     style={{
@@ -247,36 +354,53 @@ const ChatBot = () => {
                   </motion.div>
                 </motion.div>
               ))}
-              {isLoading && (
-                <motion.div 
+              {isTyping && (
+                <motion.div
                   className="flex justify-start"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                 >
-                  <div className="bg-white/10 backdrop-blur-xl text-gray-200 p-2 rounded-lg border border-white/10">
-                    <div className="flex space-x-1">
-                      {[0, 0.2, 0.4].map((delay, i) => (
-                        <motion.div
-                          key={i}
-                          className="w-1.5 h-1.5 bg-purple-600/80 rounded-full"
-                          animate={{
-                            y: ["0%", "-50%", "0%"],
-                          }}
-                          transition={{
-                            duration: 0.6,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                            delay: delay,
-                          }}
-                        />
-                      ))}
-                    </div>
+                  <motion.div
+                    className="max-w-[80%] p-2 rounded-lg backdrop-blur-xl shadow-lg bg-white/10 text-gray-200 border border-white/5"
+                    style={{ boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.2)' }}
+                  >
+                    <p className="text-xs">{typingText}<span className="animate-pulse">▌</span></p>
+                  </motion.div>
+                </motion.div>
+              )}
+              {messages.length === 1 && (
+                <motion.div
+                  className="mt-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <p className="text-xs text-gray-400 mb-2">Suggested questions:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["How can I start investing?",
+                      "What is compound interest?",
+                      "How to build an emergency fund?",
+                      "What's a good debt-to-income ratio?"
+                    ].map((question, idx) => (
+                      <motion.button
+                        key={idx}
+                        onClick={() => {
+                          setInput(question);
+                          setTimeout(() => handleSend(), 100);
+                        }}
+                        className="text-[10px] bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded-full border border-white/10 transition duration-300"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {question}
+                      </motion.button>
+                    ))}
                   </div>
                 </motion.div>
               )}
             </motion.div>
 
-            <motion.div 
+            <motion.div
               className="p-3 border-t border-white/10 backdrop-blur-xl"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -297,7 +421,7 @@ const ChatBot = () => {
                   transition={{ type: "spring", stiffness: 300, damping: 24 }}
                 />
                 <motion.button
-                  whileHover={{ 
+                  whileHover={{
                     scale: 1.05,
                     boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.37)"
                   }}

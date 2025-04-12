@@ -9,9 +9,30 @@ const financialHistorySchema = new mongoose.Schema({
   simulationId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Simulation',
-    required: true
+    required: false // Make simulationId optional
   },
-  behaviorData: {
+  isComplete: {
+    type: Boolean,
+    default: false
+  },
+  pastDecisionsImpact: {
+    positiveImpacts: [{
+      decision: String,
+      impact: String,
+      financialEffect: String
+    }],
+    negativeImpacts: [{
+      decision: String,
+      impact: String, 
+      financialEffect: String
+    }],
+    suggestions: [{
+      area: String,
+      suggestion: String,
+      potentialBenefit: String
+    }]
+  },
+  behaviorAnalysis: {
     spendingPatterns: {
       categories: [{
         name: String,

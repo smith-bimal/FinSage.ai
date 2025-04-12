@@ -1,13 +1,14 @@
 import axios from 'axios';
 
+const apiUrl = import.meta.env.VITE_API_URL;
+
 const api = axios.create({
-    baseURL: import.meta.env.API_URL,
+    baseURL: apiUrl,
     headers: {
         'Content-Type': 'application/json'
     }
 });
 
-// Add a request interceptor to attach the auth token to all requests
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
@@ -21,13 +22,11 @@ api.interceptors.request.use(
     }
 );
 
-// Add a response interceptor to handle common errors
 api.interceptors.response.use(
     (response) => {
         return response;
     },
     (error) => {
-        // Handle 401 Unauthorized errors by logging out the user
         if (error.response && error.response.status === 401) {
             localStorage.removeItem('token');
             localStorage.removeItem('userId');

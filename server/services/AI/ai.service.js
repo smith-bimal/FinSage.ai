@@ -16,7 +16,7 @@ export async function generateGeminiRecommendations(userId) {
     const spendingTrends = calculateSpendingTrends(financialData.expenses);
     const monthlyIncome = Number(financialData.income) || 0;
     const currentSavings = Number(financialData.savings) || 0;
-    
+
     // Add investment calculations
     const investments = financialData.investments || [];
     const totalInvestments = investments.reduce((total, inv) => total + Number(inv.amount), 0);
@@ -85,24 +85,34 @@ export async function generateGeminiRecommendations(userId) {
           }],
           "projections": {
             "shortTerm": {
-              "timestamps": array of 12 strings in YYYY-MM-DD format,
-              "actualValues": array of 12 numbers (include both savings and investment returns),
-              "recommendedValues": array of 12 numbers (suggest optimal saving and investment allocation)
+              "timestamps": [12 monthly dates starting from current month in YYYY-MM-DD format],
+              "actualValues": [12 numbers showing projected financial growth with current user spending/saving/investment pattern],
+              "recommendedValues": [12 numbers showing projected financial growth with optimized spending/saving/investment allocation]
             },
             "longTerm": {
-              "timestamps": array of 10 strings in YYYY-MM-DD format,
-              "actualValues": array of 10 numbers (include compound growth from investments),
-              "recommendedValues": array of 10 numbers (show potential with optimized investment strategy)
+              "timestamps": [10 yearly dates starting from current year in YYYY-MM-DD format],
+              "actualValues": [10 numbers showing projected financial growth with current user spending pattern including compound interest],
+              "recommendedValues": [10 numbers showing projected financial growth with optimized strategy including compound interest]
             }
           }
         }
       }
 
-      Ensure projections factor in:
-      1. Current investment portfolio returns
-      2. Compound growth over time
-      3. Risk-adjusted returns
-      4. Optimal investment allocation
+      For the projections:
+      - timestamps: Generate appropriate time periods (monthly for short term, yearly for long term)
+      - actualValues: Calculate based on the user's CURRENT spending patterns, savings rate, and investment choices
+      - recommendedValues: Calculate based on your OPTIMIZED recommendations for spending, savings, and investments
+
+      Short-term projections should show month-by-month growth over the next year.
+      Long-term projections should show year-by-year growth over the next decade.
+      
+      Both should factor in:
+      1. Current investment portfolio returns vs optimized portfolio allocation
+      2. Current savings rate vs recommended savings rate
+      3. Current spending patterns vs optimized spending allocation
+      4. Compound growth over time for both scenarios
+
+      Ensure the recommended values show significant improvement over the actual values to demonstrate the value of following the recommendations.
       
       Follow the schema structure precisely while incorporating investment growth calculations.`;
 
@@ -125,13 +135,20 @@ function getExpectedReturn(investmentType) {
   return returnRates[investmentType.toLowerCase()] || returnRates.others;
 }
 
-export async function analyzeBehaviorGemini(userId) {
+export async function analyzeBehaviorGemini(userId, simulationId = null) {
   try {
     const financialData = await Financial.findOne({ userId });
     if (!financialData) {
       throw new Error('Financial data not found');
     }
 
+    // Check if a history record already exists for the user and simulation
+    const existingHistory = await FinancialHistory.findOne({ userId, simulationId });
+    if (existingHistory) {
+      return existingHistory; // Return the existing history to avoid duplicates
+    }
+
+    // Get historical data for trend analysis
     const spendingTrends = calculateSpendingTrends(financialData.expenses);
     const monthlyIncome = Number(financialData.income) || 0;
     const currentSavings = Number(financialData.savings) || 0;
@@ -140,17 +157,10 @@ export async function analyzeBehaviorGemini(userId) {
     const totalExpenses = Object.values(spendingTrends)
       .reduce((sum, exp) => sum + Number(exp), 0);
 
-    // Ensure a simulation exists
-    let simulation = await Simulation.findOne({ userId }).sort({ createdAt: -1 });
-    if (!simulation) {
-      simulation = new Simulation({
-        userId,
-        recommendations: [], // Initialize with empty recommendations
-        behaviorAnalysis: {}, // Initialize with empty behavior analysis
-        chartData: {} // Initialize with empty chart data
-      });
-      await simulation.save();
-    }
+    // Get historical records for backward analysis
+    const historicalRecords = await FinancialHistory.find({ userId })
+      .sort({ date: -1 })
+      .limit(6); // Get last 6 records for trend analysis
 
     const prompt = `
       Analyze the user's financial data:
@@ -159,14 +169,19 @@ export async function analyzeBehaviorGemini(userId) {
       Total Investments: ${totalInvestments}
       Monthly Expenses: ${totalExpenses}
       Expense Breakdown: ${JSON.stringify(spendingTrends)}
+      
+      Historical Data: ${JSON.stringify(historicalRecords.map(record => ({
+      date: record.date,
+      data: record.data
+    })))}
 
       Generate analysis matching this structure:
       {
-        "behaviorData": {
+        "behaviorAnalysis": {
           "spendingPatterns": {
             "categories": [{
               "name": string,
-              "monthlyAverage": number,
+              "percentage": number,
               "trend": string
             }]
           },
@@ -175,42 +190,85 @@ export async function analyzeBehaviorGemini(userId) {
             "averageSavingsRate": number
           }
         },
+        "historicalAnalysis": {
+          "trends": [{
+            "metric": string,
+            "data": [number],
+            "insight": string
+          }]
+        },
+        "pastDecisionsImpact": {
+          "positiveImpacts": [
+            { "decision": string, "impact": string, "financialEffect": string }
+          ],
+          "negativeImpacts": [
+            { "decision": string, "impact": string, "financialEffect": string }
+          ],
+          "suggestions": [
+            { "area": string, "suggestion": string, "potentialBenefit": string }
+          ]
+        },
         "financialSnapshot": {
           "income": number,
           "expenses": number,
           "savings": number,
           "investments": number
         },
-        "analysisResults": {
-          "score": number (0-100),
-          "strengths": [string],
-          "weaknesses": [string]
+        analysisResults: {
+          score: Number,
+          strengths: [String],
+          weaknesses: [String]
         }
-      }`;
+      }
+      
+      For pastDecisionsImpact:
+      1. Identify 2-3 positive financial decisions from the user's spending/saving patterns
+      2. Identify 2-3 negative financial decisions or missed opportunities
+      3. Provide actionable suggestions based on these past decisions
+      4. Quantify the financial effect whenever possible (e.g., "saved approximately $500" or "missed potential gains of $1,000")`;
 
     const response = await generateAIContent(prompt);
     const analysis = JSON.parse(response.replace("```json", "").replace("```", ""));
 
-    // Store in financial history
-    await FinancialHistory.create({
+    // Create financial history record with all required fields
+    const newHistory = await FinancialHistory.create({
       userId,
-      simulationId: simulation._id, // Use the simulation ID
-      ...analysis
+      simulationId,
+      isComplete: true,
+      pastDecisionsImpact: analysis.pastDecisionsImpact,
+      behaviorAnalysis: analysis.behaviorAnalysis,
+      financialSnapshot: analysis.financialSnapshot,
+      analysisResults: analysis.analysisResults
     });
 
-    return analysis;
+    return newHistory;
   } catch (error) {
     console.error('Behavior Analysis Error:', error);
-    throw new Error(`Failed to analyze behavior: ${error.message}`);
+    // Return a basic structure to prevent errors
+    return {
+      behaviorAnalysis: {
+        spendingPatterns: {
+          categories: [{ name: 'Miscellaneous', percentage: 100, trend: 'stable' }]
+        },
+        savingsBehavior: {
+          consistency: 'moderate',
+          averageSavingsRate: 0
+        }
+      },
+      historicalAnalysis: {
+        trends: []
+      },
+      pastDecisionsImpact: {
+        positiveImpacts: [],
+        negativeImpacts: [],
+        suggestions: []
+      },
+      financialSnapshot: {
+        income: 0,
+        expenses: 0,
+        savings: 0,
+        investments: 0
+      }
+    };
   }
-}
-
-async function updateFinancialHistory(userId, simulationId, updates) {
-  await FinancialHistory.findOneAndUpdate(
-    { userId, simulationId },
-    {
-      $set: updates
-    },
-    { new: true, upsert: true }
-  );
 }

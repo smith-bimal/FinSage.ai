@@ -11,7 +11,7 @@ const router = express.Router();
 
 router.post('/:userId', createSimulation);
 router.get('/:userId', getSimulations);
-router.get('/:userId/behavior', getSimulationWithBehavior);
+router.get('/:userId/:simulationId/behavior', getSimulationWithBehavior);
 router.put('/:id', updateSimulation);
 router.delete('/:id', deleteSimulation);
 

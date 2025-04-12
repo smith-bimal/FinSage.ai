@@ -132,12 +132,11 @@ const LandingPage = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <div className="h-11 w-11 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center">
-                  <Cpu className="h-5 w-5 text-white" />
-                </div>
+                <img src="logo.png" alt="" className="w-12 h-12" />
+
                 <motion.div
-                  className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-blue-400"
-                  animate={{ scale: [1, 1.2, 1] }}
+                  className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-indigo-400"
+                  animate={{ scale: [0.8, 1, 0.8], opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 ></motion.div>
               </motion.div>
@@ -167,9 +166,9 @@ const LandingPage = () => {
               {[
                 { name: "Home", id: "home" },
                 { name: "Features", id: "features" },
-                { name: "How It Works", id: "howItWorks" },
-                { name: "Recommendations", id: "recommendations" },
-                { name: "Testimonials", id: "testimonials" }
+                { name: "Works", id: "howItWorks" },
+                { name: "Recommends", id: "recommendations" },
+                { name: "Reviews", id: "testimonials" }
               ].map((item) => (
                 <button
                   key={item.id}
@@ -199,9 +198,9 @@ const LandingPage = () => {
                     {[
                       { name: "Home", id: "home" },
                       { name: "Features", id: "features" },
-                      { name: "How It Works", id: "howItWorks" },
-                      { name: "Recommendations", id: "recommendations" },
-                      { name: "Testimonials", id: "testimonials" }
+                      { name: "Works", id: "howItWorks" },
+                      { name: "Recommends", id: "recommendations" },
+                      { name: "Reviews", id: "testimonials" }
                     ].map((item, i) => (
                       <motion.div
                         key={item.id}

@@ -12,8 +12,9 @@ A complete MERN-based solution that integrates intelligent decision-making with 
 
 ## Deployed App
 
-[👉 Frontend - https://finsage-ai-phi.vercel.app](https://finsage-ai-phi.vercel.app/)
-[👉 Backend - https://finsage-ai.onrender.com](https://finsage-ai.onrender.com)
+👉 Frontend - [https://finsage-ai-phi.vercel.app](https://finsage-ai-phi.vercel.app/)
+
+👉 Backend - [https://finsage-ai.onrender.com](https://finsage-ai.onrender.com)
 
 ## Video Walkthrough
 

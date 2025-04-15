@@ -22,7 +22,7 @@ A complete MERN-based solution that integrates intelligent decision-making with 
 ## Directory Structure
 
 ```
-xto10x-3/
+FinSage.ai/
 ├─ client/
 │ ├─ public/
 │ │ ├─ hero-bg.jpg

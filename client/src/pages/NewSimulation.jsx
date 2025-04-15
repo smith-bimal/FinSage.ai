@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { Cpu, ArrowRight, DollarSign, Briefcase, Home, MapPin, TrendingUp, ShoppingBag, Plus, ChevronLeft } from 'lucide-react';
+import { ArrowRight, DollarSign, Briefcase, Home, MapPin, TrendingUp, ShoppingBag, Plus, ChevronLeft } from 'lucide-react';
 import { financialService } from "../services/financial.service.js";
 import { simulationService } from "../services/simulation.service.js";
 import Header from '../components/Header';
@@ -30,8 +30,7 @@ function NewSimulation() {
       { type: 'others', amount: '', returnRate: 8, startDate: new Date() }
     ],
     assets: [
-      { name: '', value: '', purchaseDate: new Date() },
-      { name: 'Home', value: '', purchaseDate: new Date() }
+      { name: '', value: '', purchaseDate: new Date() }
     ],
 
 
@@ -545,7 +544,7 @@ function NewSimulation() {
                               onChange={(e) => setFormData({ ...formData, newSalary: e.target.value })}
                             />
                           </div>
-                          <div className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-400 to-indigo-400 group-focus-within:w-full transition-all duration-300"></div>
+                          <div className="absolute bottom-5 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-400 to-indigo-400 group-focus-within:w-full transition-all duration-300"></div>
                           <p className="text-xs text-gray-500 mt-1">Enter your expected monthly salary after taxes</p>
                         </div>
                       </div>

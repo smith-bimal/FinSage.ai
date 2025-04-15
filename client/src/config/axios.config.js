@@ -9,6 +9,12 @@ const api = axios.create({
     }
 });
 
+// Create a central navigation handler for auth redirects
+let navigationFunction = null;
+export const setNavigationFunction = (navFunction) => {
+    navigationFunction = navFunction;
+};
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
     (config) => {
@@ -35,12 +41,19 @@ api.interceptors.response.use(
             localStorage.removeItem('token');
             localStorage.removeItem('userId');
             localStorage.removeItem('userData');
-            
+
             // Don't redirect from login page to avoid redirect loops
             if (!window.location.pathname.includes('/login')) {
                 // Store the current location to redirect back after login
                 sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
-                window.location.href = '/login';
+
+                // Use React Router navigation if available, otherwise fall back to window.location
+                if (navigationFunction) {
+                    navigationFunction('/login');
+                } else {
+                    // Fallback for non-React components or during initialization
+                    window.location.href = '/login';
+                }
             }
         }
         return Promise.reject(error);

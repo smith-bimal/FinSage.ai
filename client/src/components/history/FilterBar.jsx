@@ -32,7 +32,7 @@ const FilterBar = ({
       transition={{ duration: 0.3 }}
       className="glass-card rounded-xl px-6 py-5 mb-8 border border-white/10"
     >
-      <div className="flex flex-col space-y-6">
+      <div className="flex flex-col gap-6">
         {/* Search and Calendar Row */}
         <div className="flex flex-col md:flex-row gap-4 items-center">
           <div className="relative flex-1 w-full">
@@ -42,7 +42,7 @@ const FilterBar = ({
               placeholder="Search simulations by name or keywords..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-10 py-3 bg-white/5 text-white/90 rounded-lg border border-white/10 focus:border-purple-500/50 focus:ring-2 ring-purple-500/20 focus:outline-none transition-all duration-200"
+              className="w-full pl-10 pr-10 py-3 bg-white/5 text-white/90 text-sm rounded-lg border border-white/10 focus:border-purple-500/50 focus:ring-2 ring-purple-500/20 focus:outline-none transition-all duration-200"
             />
             {search && (
               <button 
@@ -54,7 +54,7 @@ const FilterBar = ({
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="items-center gap-3 hidden md:flex ">
             <div className="relative w-full md:w-auto">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                 <Calendar className="h-5 w-5 text-purple-400/80" />
@@ -63,7 +63,7 @@ const FilterBar = ({
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full md:w-44 pl-10 pr-4 py-3 bg-white/5 text-white/90 rounded-lg border border-white/10 focus:border-purple-500/50 focus:ring-2 ring-purple-500/20 focus:outline-none transition-all duration-200"
+                className="w-full md:w-44 pl-10 pr-4 py-3 bg-white/5 text-white/90 text-sm rounded-lg border border-white/10 focus:border-purple-500/50 focus:ring-2 ring-purple-500/20 focus:outline-none transition-all duration-200"
               />
             </div>
 
@@ -82,7 +82,7 @@ const FilterBar = ({
         </div>
 
         {/* Filter Status Bar */}
-        <div className="relative">
+        <div className="relative hidden md:block">
           <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 text-purple-400/80">
             <Filter className="h-4 w-4" />
           </div>

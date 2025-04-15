@@ -27,7 +27,7 @@ const AIRecommendations = ({ recommendations }) => {
         {recommendations.map((rec, index) => (
           <motion.div
             key={rec._id}
-            className="bg-gray-900/40 backdrop-blur-md border border-gray-700/50 rounded-lg p-4 hover:border-blue-500/50 transition-colors cursor-pointer group relative overflow-hidden"
+            className="bg-gray-900/40 backdrop-blur-md border border-gray-700/50 rounded-lg p-4 hover:border-blue-500/50 transition-colors group relative overflow-hidden"
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: 0.6 + index * 0.1 }}
@@ -44,15 +44,15 @@ const AIRecommendations = ({ recommendations }) => {
               <p className="text-white text-sm mb-1 group-hover:text-blue-100 transition-colors">{rec.action}</p>
               <p className="text-xs text-gray-400 mb-2 line-clamp-2">{rec.rationale}</p>
               <div className="flex justify-between text-xs">
-                <span className="text-green-400 flex items-center"><TrendingUp className="h-3 w-3 mr-1" /> Monthly: +${rec.potentialImpact.monthly}</span>
-                <span className="text-green-400 flex items-center"><TrendingUp className="h-3 w-3 mr-1" /> Yearly: +${rec.potentialImpact.yearly}</span>
+                <span className="text-green-400 flex items-center"><TrendingUp className="h-3 w-3 mr-1" /> Monthly: +₹{rec.potentialImpact.monthly}</span>
+                <span className="text-green-400 flex items-center"><TrendingUp className="h-3 w-3 mr-1" /> Yearly: +₹{rec.potentialImpact.yearly}</span>
               </div>
             </div>
             <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 group-hover:w-full transition-all duration-300"></div>
           </motion.div>
         ))}
         <motion.button
-          className="w-full py-2 text-sm text-blue-400 hover:text-blue-300 bg-gray-800/50 backdrop-blur-md border border-gray-700 hover:border-blue-600/50 rounded-lg transition-colors flex items-center justify-center group"
+          className="w-full py-2 text-sm text-blue-400 hover:text-blue-300 bg-gray-800/50 backdrop-blur-md border cursor-pointer  border-gray-700 hover:border-blue-600/50 rounded-lg transition-colors flex items-center justify-center group"
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
         >

@@ -7,14 +7,15 @@ import {
     getSimulationWithBehavior,
     getOneSimulation
 } from '../controllers/simulation.controller.js';
+import { authenticateToken } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-router.post('/:userId', createSimulation);
-router.get('/:userId', getSimulations);
+router.post('/:userId', authenticateToken, createSimulation);
+router.get('/:userId', authenticateToken, getSimulations);
 router.get('/:userId/:id', getOneSimulation);
-router.get('/:userId/:simulationId/behavior', getSimulationWithBehavior);
-router.put('/:id', updateSimulation);
-router.delete('/:id', deleteSimulation);
+router.get('/:userId/:simulationId/behavior', authenticateToken, getSimulationWithBehavior);
+router.put('/:id', authenticateToken, updateSimulation);
+router.delete('/:id', authenticateToken, deleteSimulation);
 
 export default router;

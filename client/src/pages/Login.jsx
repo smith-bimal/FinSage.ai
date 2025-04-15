@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
-import { authService } from '../services/auth.service.js';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
   const location = useLocation();
-  const { login } = useAuth();
+  const { loginWithCredentials, registerWithCredentials } = useAuth();
   const [isSignup, setIsSignup] = useState(location.state?.signup || false);
   const [formData, setFormData] = useState({
     email: '',
@@ -25,7 +24,6 @@ export default function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Update isSignup state if navigated with state
     if (location.state?.signup !== undefined) {
       setIsSignup(location.state.signup);
     }
@@ -38,48 +36,23 @@ export default function Login() {
 
     try {
       if (isSignup) {
-        // Check if passwords match
         if (formData.password !== formData.confirmPassword) {
           setError('Passwords do not match');
           setIsLoading(false);
           return;
         }
-
-        // Registration flow
-        const data = await authService.register({
+        await registerWithCredentials({
           email: formData.email,
           password: formData.password,
           name: formData.firstName + ' ' + formData.lastName,
         });
-
-        // Context login after registration
-        if (data.user && data.token) {
-          console.log("Registration successful, logging in user:", data.user);
-          login(data.user, data.token);
-          // Redirect is now handled in the login function in context
-        } else {
-          console.error("Registration response missing user or token:", data);
-          setError('Registration successful but login failed. Please try logging in.');
-        }
       } else {
-        // Login flow
-        const data = await authService.login({
+        await loginWithCredentials({
           email: formData.email,
           password: formData.password
         });
-
-        // Context login after authentication
-        if (data.user && data.token) {
-          console.log("Login successful, user data:", data.user);
-          login(data.user, data.token);
-          // Redirect is now handled in the login function in context
-        } else {
-          console.error("Login response missing user or token:", data);
-          setError('Authentication successful but user data is missing. Please try again.');
-        }
       }
     } catch (err) {
-      console.error('Auth error:', err);
       setError(err.message || 'Authentication failed. Please check your credentials.');
     } finally {
       setIsLoading(false);

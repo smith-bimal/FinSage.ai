@@ -1,11 +1,13 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../config/axios.config.js';
+import { useNavigate } from 'react-router';
+import { authService } from '../services/auth.service.js';
 
 // Create the context with default values
 const AuthContext = createContext({
   user: null,
   loading: true,
-  login: () => {},
+  loginWithCredentials: () => {},
+  registerWithCredentials: () => {},
   logout: () => {},
   updateUser: () => {},
   isAuthenticated: false,
@@ -14,6 +16,7 @@ const AuthContext = createContext({
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     checkAuth();
@@ -27,12 +30,11 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      // Try to fetch current user data
-      const { data } = await api.get('/auth/me');
-      setUser(data);
+      const userData = await authService.getCurrentUser();
+      setUser(userData);
+      localStorage.setItem('userData', JSON.stringify(userData));
     } catch (err) {
       console.error('Authentication error:', err);
-      // If API call fails, try to use stored user data as fallback
       const storedUserData = localStorage.getItem('userData');
       if (storedUserData) {
         try {
@@ -46,7 +48,6 @@ export const AuthProvider = ({ children }) => {
           localStorage.removeItem('userData');
         }
       } else {
-        // Clear invalid tokens if no stored data
         localStorage.removeItem('token');
         localStorage.removeItem('userId');
       }
@@ -55,14 +56,40 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = (userData, token) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('userId', userData._id);
-    localStorage.setItem('userData', JSON.stringify(userData));
-    setUser(userData);
-    
-    // After login, redirect to history page
-    window.location.href = '/history';
+  const loginWithCredentials = async (credentials) => {
+    const data = await authService.login(credentials);
+    if (data.token && (data.userId || (data.user && data.user._id))) {
+      const userId = data.userId || (data.user && data.user._id);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userId', userId);
+      if (data.user) {
+        localStorage.setItem('userData', JSON.stringify(data.user));
+        setUser(data.user);
+      } else {
+        setUser({ _id: userId });
+      }
+      navigate('/history');
+    } else {
+      throw new Error('Authentication successful but user data is incomplete.');
+    }
+  };
+
+  const registerWithCredentials = async (userData) => {
+    const data = await authService.register(userData);
+    if (data.token && (data.userId || (data.user && data.user._id))) {
+      const userId = data.userId || (data.user && data.user._id);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userId', userId);
+      if (data.user) {
+        localStorage.setItem('userData', JSON.stringify(data.user));
+        setUser(data.user);
+      } else {
+        setUser({ _id: userId });
+      }
+      navigate('/history');
+    } else {
+      throw new Error('Registration successful but user data is incomplete.');
+    }
   };
 
   const logout = () => {
@@ -70,9 +97,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('userId');
     localStorage.removeItem('userData');
     setUser(null);
-    
-    // After logout, redirect to home page
-    window.location.href = '/';
+    navigate('/');
   };
 
   const updateUser = (updatedUserData) => {
@@ -84,7 +109,8 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     loading,
-    login,
+    loginWithCredentials,
+    registerWithCredentials,
     logout,
     updateUser,
     isAuthenticated: !!user,

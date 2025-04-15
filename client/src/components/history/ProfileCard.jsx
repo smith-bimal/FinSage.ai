@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, TrendingUp, TrendingDown, Calendar, DollarSign, BarChart3, Clock, Trash2 } from 'lucide-react';
-import StatusBadge from './StatusBadge';
+import StatusBadge from '../StatusBadge';
 
 const ProfileCard = ({
   name,

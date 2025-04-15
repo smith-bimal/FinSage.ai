@@ -115,7 +115,9 @@ export async function generateGeminiRecommendations(userId) {
 
       Ensure the recommended values show significant improvement over the actual values to demonstrate the value of following the recommendations.
       
-      Follow the schema structure precisely while incorporating investment growth calculations.`;
+      Follow the schema structure precisely while incorporating investment growth calculations.
+      Generate all in Indian currency (₹) and ensure all values are realistic and achievable.
+      `;
 
     const response = await generateAIContent(prompt);
     return JSON.parse(response.replace("```json", "").replace("```", ""));

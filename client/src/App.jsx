@@ -1,10 +1,9 @@
-import { Routes, Route, Navigate, useLocation } from 'react-router';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router';
 import { useEffect } from 'react';
 import Dashboard from './pages/Dashboard';
 import NewSimulation from './pages/NewSimulation';
 import Login from './pages/Login';
 import Layout from './components/Layout';
-import ResultsPage from './pages/ResultsPage';
 import LandingPage from './pages/LandingPage';
 import History from './pages/History';
 import NotFound from './pages/NotFound';
@@ -39,15 +38,16 @@ const PrivateRoute = ({ children }) => {
 const AuthRedirector = () => {
   const auth = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // If authenticated and on login page, check for redirect
     if (auth.user && location.pathname === '/login') {
       const redirectPath = sessionStorage.getItem('redirectAfterLogin') || '/history';
       sessionStorage.removeItem('redirectAfterLogin');
-      window.location.href = redirectPath;
+      navigate(redirectPath);
     }
-  }, [auth.user, location.pathname]);
+  }, [auth.user, location.pathname, navigate]);
 
   return null;
 };
@@ -68,11 +68,9 @@ function AppRoutes() {
             </Layout>
           </PrivateRoute>
         }>
-          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/:id" element={<Dashboard />} />
           <Route path="/new-simulation" element={<NewSimulation />} />
           <Route path="/history" element={<History />} />
-          <Route path="/results/:simulationId" element={<ResultsPage />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

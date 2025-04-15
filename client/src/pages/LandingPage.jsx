@@ -46,6 +46,18 @@ const LandingPage = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Prevent background scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+    return () => {
+      document.body.classList.remove('overflow-hidden');
+    };
+  }, [mobileMenuOpen]);
+
   // Smooth scroll function
   const scrollToSection = (sectionId) => {
     const section = document.getElementById(sectionId);
@@ -189,6 +201,7 @@ const LandingPage = () => {
               {mobileMenuOpen && (
                 <motion.div
                   className="fixed inset-0 bg-black/95 backdrop-blur-lg z-40 flex items-center justify-center"
+                  style={{ top: 0, left: 0, width: '100vw', height: '100vh', position: 'fixed' }}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}

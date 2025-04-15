@@ -27,7 +27,13 @@ export const registerUser = async (req, res) => {
         await user.save();
 
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-        res.status(201).json({ userId: user._id, message: 'User registered successfully' });
+        // Return user object without password for consistent response format
+        const userResponse = {
+            _id: user._id,
+            name: user.name,
+            email: user.email
+        };
+        res.status(201).json({ userId: user._id, token, user: userResponse, message: 'User registered successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -44,7 +50,13 @@ export const loginUser = async (req, res) => {
         if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-        res.json({ userId: user._id, token });
+        // Include user information in response for consistency with register function
+        const userResponse = {
+            _id: user._id,
+            name: user.name,
+            email: user.email
+        };
+        res.json({ userId: user._id, token, user: userResponse });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

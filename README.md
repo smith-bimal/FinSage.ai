@@ -12,17 +12,18 @@ A complete MERN-based solution that integrates intelligent decision-making with 
 
 ## Deployed App
 
-[👉 Frontend - https://finsage-ai-phi.vercel.app](https://finsage-ai-phi.vercel.app/)
-[👉 Backend - https://finsage-ai.onrender.com](https://finsage-ai.onrender.com)
+👉 Frontend - [https://finsage-ai-phi.vercel.app](https://finsage-ai-phi.vercel.app/)
+
+👉 Backend - [https://finsage-ai.onrender.com](https://finsage-ai.onrender.com)
 
 ## Video Walkthrough
 
-🎥 [Watch the Project Demo](https://your-google-drive-link)
+🎥 [Watch the Project Demo](https://youtu.be/SQWBeaf_6iM)
 
 ## Directory Structure
 
 ```
-xto10x-3/
+FinSage.ai/
 ├─ client/
 │ ├─ public/
 │ ├─ src/
@@ -146,11 +147,11 @@ cd finsage-ai
 Fire up the local host for both
 
 ## Contributors
-___________________________________________________________________________
-| Name           | GitHub                                                  |   
-|--------------------------------------------------------------------------|
-| Smith Bimal     | [@smith-bimal](https://github.com.smith-bimal)         |
-| Raj Ghosh       | [@Rajghosh786](https://github.com/Rajghosh786)         |
-| Ankith Mandal   | [@ankithmandal09](https://github.com/ankithmandal09)   |
-___________________________________________________________________________
+______________________________________________________________________________
+| Name              | GitHub                                                 |   
+|----------------------------------------------------------------------------|
+| Golak Bihari Bemal| [@smith-bimal](https://github.com.smith-bimal)         |
+| Raj Ghosh         | [@Rajghosh786](https://github.com/Rajghosh786)         |
+| Ankith Mandal     | [@ankithmandal09](https://github.com/ankithmandal09)   |
+______________________________________________________________________________
 

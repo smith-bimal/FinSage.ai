@@ -17,13 +17,14 @@ import {
   X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "react-router";
+import { Link,useNavigate } from "react-router";
 import ChatBot from "../pages/ChatBot.jsx";
 
 const LandingPage = () => {
   const [scrollY, setScrollY] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -58,7 +59,7 @@ const LandingPage = () => {
     };
   }, [mobileMenuOpen]);
 
-  // Smooth scroll function
+  // Smooth scroll function modified to use navigate for page changes
   const scrollToSection = (sectionId) => {
     const section = document.getElementById(sectionId);
     if (section) {
@@ -66,6 +67,10 @@ const LandingPage = () => {
         top: section.offsetTop - 80,
         behavior: "smooth"
       });
+      setMobileMenuOpen(false);
+    } else if (sectionId.startsWith('/')) {
+      // If it's a path rather than an ID, navigate to that path
+      navigate(sectionId);
       setMobileMenuOpen(false);
     }
   };

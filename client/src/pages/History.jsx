@@ -343,6 +343,10 @@ const History = () => {
     setDeleteError(null);
   };
 
+  const handleReloadPage = () => {
+    navigate(0); // Using navigate(0) is equivalent to window.location.reload()
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-[#13071F] to-black overflow-hidden">
       <AnimatedBackground />
@@ -406,7 +410,7 @@ const History = () => {
               <div className="bg-red-900/20 border border-red-700/30 rounded-lg p-6 text-center">
                 <p className="text-red-400 mb-2">{error}</p>
                 <button
-                  onClick={() => window.location.reload()}
+                  onClick={handleReloadPage}
                   className="text-sm py-1.5 px-4 bg-red-600/30 hover:bg-red-600/50 rounded text-white"
                 >
                   Try Again

@@ -9,6 +9,7 @@ import History from './pages/History';
 import NotFound from './pages/NotFound';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ChatBot from './pages/ChatBot';
+import { setNavigationHandler } from './config/axios.config';
 
 // Enhanced PrivateRoute with support for redirecting back after login
 const PrivateRoute = ({ children }) => {
@@ -39,6 +40,11 @@ const AuthRedirector = () => {
   const auth = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Set the navigation handler for axios config
+  useEffect(() => {
+    setNavigationHandler(navigate);
+  }, [navigate]);
 
   useEffect(() => {
     // If authenticated and on login page, check for redirect

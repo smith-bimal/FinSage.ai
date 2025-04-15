@@ -2,6 +2,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { useNavigate } from "react-router";
+
 // Initialize the API with environment variable
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
@@ -57,6 +59,7 @@ const messageVariants = {
 
 // Accept context as a prop
 const ChatBot = ({ currentPage, userData }) => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -240,6 +243,11 @@ const ChatBot = ({ currentPage, userData }) => {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const navigateToPage = (path) => {
+    navigate(path);
+    setIsOpen(false); // Close chatbot after navigation
   };
 
   return (

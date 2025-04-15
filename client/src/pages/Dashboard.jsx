@@ -1,4 +1,4 @@
-  /* eslint-disable no-unused-vars */
+/* eslint-disable no-unused-vars */
   import { useState, useEffect, useMemo } from "react";
   import { TrendingUp, BarChart3, PieChart as PieChartIcon, AlertTriangle, Loader } from "lucide-react";
   import { motion } from "framer-motion";
@@ -37,6 +37,10 @@
     const [simulationData, setSimulationData] = useState(null);
     const [financialHistory, setFinancialHistory] = useState(null);
     const [formatter] = useState(new Intl.NumberFormat('en-US', { style: 'currency', currency: 'INR' }));
+
+    const handleReloadData = () => {
+      navigate(0); // Using navigate(0) is equivalent to refreshing the page
+    };
 
     useEffect(() => {
       const fetchSimulationData = async () => {
@@ -563,7 +567,7 @@
           <p className="text-xs text-gray-500">
             Last updated: {new Date(simulationData?.updatedAt || simulationData?.createdAt).toLocaleString()} •
             <span className="text-blue-400 cursor-pointer hover:underline ml-1"
-              onClick={() => window.location.reload()}>
+              onClick={handleReloadData}>
               Refresh data
             </span>
           </p>

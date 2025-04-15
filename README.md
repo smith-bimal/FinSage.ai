@@ -235,11 +235,11 @@ cd finsage-ai
 Fire up the local host for both
 
 ## Contributors
-___________________________________________________________________________
-| Name           | GitHub                                                  |   
-|--------------------------------------------------------------------------|
-| Smith Bimal     | [@smith-bimal](https://github.com.smith-bimal)         |
-| Raj Ghosh       | [@Rajghosh786](https://github.com/Rajghosh786)         |
-| Ankith Mandal   | [@ankithmandal09](https://github.com/ankithmandal09)   |
-___________________________________________________________________________
+______________________________________________________________________________
+| Name              | GitHub                                                 |   
+|----------------------------------------------------------------------------|
+| Golak Bihari Bemal| [@smith-bimal](https://github.com.smith-bimal)         |
+| Raj Ghosh         | [@Rajghosh786](https://github.com/Rajghosh786)         |
+| Ankith Mandal     | [@ankithmandal09](https://github.com/ankithmandal09)   |
+______________________________________________________________________________
 

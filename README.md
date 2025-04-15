@@ -25,119 +25,30 @@ A complete MERN-based solution that integrates intelligent decision-making with 
 xto10x-3/
 ├─ client/
 │ ├─ public/
-│ │ ├─ hero-bg.jpg
-│ │ ├─ logo.jpg
-│ │ └─ logo.png
 │ ├─ src/
 │ │ ├─ assets/
-│ │ │ └─ logo.png
 │ │ ├─ components/
 │ │ │ ├─ dashboard/
-│ │ │ │ ├─ AIRecommendations.jsx
-│ │ │ │ ├─ DecisionImpactAnalysis.jsx
-│ │ │ │ ├─ ExpenseBreakdownChart.jsx
-│ │ │ │ ├─ FinancialProjections.jsx
-│ │ │ │ ├─ SavingsMeter.jsx
-│ │ │ │ ├─ SimulationInfo.jsx
-│ │ │ │ └─ StatCard.jsx
-│ │ │ ├─ FilterBar.jsx
-│ │ │ ├─ FNG.jsx
-│ │ │ ├─ FNGComponents.jsx
-│ │ │ ├─ Header.jsx
-│ │ │ ├─ HeaderFile.jsx
-│ │ │ ├─ Layout.jsx
-│ │ │ ├─ ProfileCard.jsx
-│ │ │ └─ StatusBadge.jsx
+│ │ │ └─ history
 │ │ ├─ config/
-│ │ │ └─ axios.config.js
 │ │ ├─ contexts/
-│ │ │ └─ AuthContext.jsx
 │ │ ├─ hooks/
-│ │ │ └─ useApi.js
 │ │ ├─ pages/
-│ │ │ ├─ ChatBot.jsx
-│ │ │ ├─ Dashboard.jsx
-│ │ │ ├─ History.jsx
-│ │ │ ├─ LandingPage.jsx
-│ │ │ ├─ Login.jsx
-│ │ │ ├─ NewSimulation.jsx
-│ │ │ ├─ NotFound.jsx
-│ │ │ └─ ResultsPage.jsx
 │ │ ├─ services/
-│ │ │ ├─ auth.service.js
-│ │ │ ├─ dashboard.service.js
-│ │ │ ├─ financial.service.js
-│ │ │ └─ simulation.service.js
 │ │ ├─ styles/
-│ │ │ └─ history.css
-│ │ ├─ App.jsx
-│ │ ├─ index.css
-│ │ └─ main.jsx
-│ ├─ .env
-│ ├─ .gitignore
-│ ├─ components.json
-│ ├─ eslint.config.js
-│ ├─ index.html
-│ ├─ package-lock.json
-│ ├─ package.json
-│ ├─ README.md
-│ └─ vite.config.js
 ├─ server/
 │ ├─ config/
-│ │ └─ db.config.js
 │ ├─ controllers/
-│ │ ├─ ai.controller.js
-│ │ ├─ auth.controller.js
-│ │ ├─ financial.controller.js
-│ │ ├─ simulation.controller.js
-│ │ └─ user.controller.js
 │ ├─ helpers/
-│ │ ├─ behavior.analysis.js
-│ │ ├─ calculation.helper.js
-│ │ ├─ financial.predictor.js
-│ │ └─ gemini.helper.js
 │ ├─ middlewares/
-│ │ ├─ audit.middleware.js
-│ │ ├─ auth.middleware.js
-│ │ ├─ error.middleware.js
-│ │ ├─ rateLimit.middleware.js
-│ │ └─ validation.middleware.js
 │ ├─ models/
 │ │ ├─ schemas/
-│ │ │ ├─ analysis.schema.js
-│ │ │ ├─ recommendation.schema.js
-│ │ │ ├─ retrospective.schema.js
-│ │ │ └─ scenario.schema.js
-│ │ ├─ financial.history.model.js
-│ │ ├─ financial.model.js
-│ │ ├─ simulation.model.js
-│ │ └─ user.model.js
 │ ├─ routes/
-│ │ ├─ ai.routes.js
-│ │ ├─ auth.routes.js
-│ │ ├─ financial.routes.js
-│ │ ├─ simulation.routes.js
-│ │ └─ user.routes.js
 │ ├─ services/
 │ │ ├─ AI/
 │ │ │ ├─ handlers/
-│ │ │ │ └─ behavior.handler.js
-│ │ │ └─ ai.service.js
 │ │ ├─ simulation/
-│ │ │ ├─ analysis.service.js
-│ │ │ ├─ retrospective.service.js
-│ │ │ └─ simulation.service.js
-│ │ └─ user.service.js
 │ ├─ utils/
-│ │ ├─ behavior.helper.js
-│ │ ├─ calculator.js
-│ │ └─ scenario.helper.js
-│ ├─ .env
-│ ├─ index.js
-│ ├─ package-lock.json
-│ └─ package.json
-├─ .gitignore
-└─ README.md
 ```
 
 ## Glimpse and Screenshots of our Cloned Website:

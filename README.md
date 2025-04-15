@@ -17,7 +17,7 @@ A complete MERN-based solution that integrates intelligent decision-making with 
 
 ## Video Walkthrough
 
-🎥 [Watch the Project Demo](https://your-google-drive-link)
+🎥 [Watch the Project Demo](https://youtu.be/SQWBeaf_6iM)
 
 ## Directory Structure
 

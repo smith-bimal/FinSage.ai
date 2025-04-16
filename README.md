@@ -52,7 +52,7 @@ FinSage.ai/
 │ ├─ utils/
 ```
 
-## Glimpse and Screenshots of our Cloned Website:
+## Glimpse and Screenshots of our Website:
 Landing Page
 ![Landing page](<uploads/landing page.png>)
 

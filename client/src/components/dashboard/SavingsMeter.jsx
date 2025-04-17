@@ -7,7 +7,7 @@ import { FNGSvg, FNGLabels } from '../FNGComponents';
 const SavingsMeter = ({ savingsPercentage, savingsAmount, formatter }) => {
   return (
     <motion.div
-      className="bg-black/30 backdrop-blur-xl rounded-xl border border-gray-800/50 overflow-hidden p-6 shadow-lg hover:border-purple-500/30 transition-all duration-300 relative h-full flex flex-col"
+      className="bg-black/30 backdrop-blur-xl rounded-xl border border-gray-800/50 min-h-[465px] overflow-hidden p-6 shadow-lg hover:border-purple-500/30 transition-all duration-300 relative h-full flex flex-col"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.4 }}
@@ -28,11 +28,6 @@ const SavingsMeter = ({ savingsPercentage, savingsAmount, formatter }) => {
       </div>
       
       <div className="flex-grow flex flex-col justify-between max-h-68">
-        <div className="mb-2 text-center">
-          <h3 className="text-lg text-gray-400 font-medium">Current Savings</h3>
-          <p className="text-3xl font-bold text-white mt-1">{formatter.format(savingsAmount)}</p>
-        </div>
-        
         <div className="relative flex-grow">
           <FNGSvg 
             savingsPercentage={savingsPercentage} 

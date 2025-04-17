@@ -116,7 +116,7 @@ function NewSimulation() {
       };
 
       // Update financial data with explicit monthly investments field
-      await financialService.updateFinancialData(userId, financialData);
+      const newFinancialData = await financialService.updateFinancialData(userId, financialData);
 
       // Include monthlyInvestments in the scenario details
       let details = {};
@@ -157,24 +157,7 @@ function NewSimulation() {
           break;
       }
 
-      const simulationData = {
-        futureState: [{
-          type: formData.scenario,
-          timeline: Number(formData.timeline) || 12,
-          details
-        }],
-        // Include financial summary directly in simulation data
-        financialData: {
-          income: Number(formData.income) || 0,
-          expenses: formData.expenses
-            .filter(expense => expense.amount.trim() !== '')
-            .reduce((sum, expense) => sum + Number(expense.amount), 0),
-          savings: Number(formData.savings) || 0,
-          monthlyInvestments: totalMonthlyInvestments
-        }
-      };
-
-      const response = await simulationService.createSimulation(userId, simulationData);
+      const response = await simulationService.createSimulation(newFinancialData);
 
       console.log("Simulation created successfully!");
       navigate("/history", { state: { simulationId: response._id } });

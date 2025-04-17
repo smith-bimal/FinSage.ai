@@ -10,12 +10,6 @@ const simulationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Financial'
   },
-  financialData: {
-    income: Number,
-    expenses: Number,
-    savings: Number,
-    monthlyInvestments: Number
-  },
   accuracyPercentage: {
     type: Number,
     default: 0

@@ -106,6 +106,7 @@ const History = () => {
 
         // Format the data to match our component requirements
         const formattedData = data.map(item => {
+          console.log(item);
           const incomeData = item.chartData?.incomeVsExpenses?.find(i => i.label === "Income");
           const expensesData = item.chartData?.incomeVsExpenses?.find(i => i.label === "Expenses");
 
@@ -144,7 +145,6 @@ const History = () => {
             id: item._id,
             name: item.title || `Simulation ${new Date(item.createdAt).toLocaleDateString()}`,
             date: new Date(item.createdAt).toISOString().split('T')[0],
-            thumbnail: item.thumbnail || "/images/default-thumbnail.png",
             totalRevenue: `$${revenue.toLocaleString()}`,
             income: `$${income.toLocaleString()}`,
             expenses: `$${expenses.toLocaleString()}`,

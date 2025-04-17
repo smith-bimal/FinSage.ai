@@ -11,7 +11,7 @@ import { authenticateToken } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-router.post('/:userId', authenticateToken, createSimulation);
+router.post('/', authenticateToken, createSimulation);
 router.get('/:userId', authenticateToken, getSimulations);
 router.get('/:userId/:id', getOneSimulation);
 router.get('/:userId/:simulationId/behavior', authenticateToken, getSimulationWithBehavior);

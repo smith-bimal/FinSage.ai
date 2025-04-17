@@ -1,9 +1,9 @@
 import api from '../config/axios.config.js';
 
 export const simulationService = {
-  createSimulation: async (userId, data) => {
+  createSimulation: async (data, userId) => {
     try {
-      const response = await api.post(`/simulations/${userId}`, data);
+      const response = await api.post(`/simulations/`, data, userId);
       return response.data;
     } catch (error) {
       throw error.response?.data || error;

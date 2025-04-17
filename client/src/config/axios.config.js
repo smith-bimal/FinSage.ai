@@ -16,13 +16,27 @@ export const setNavigationHandler = (navigate) => {
     navHandler = navigate;
 };
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and handle data for requests
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
+        
+        // Handle data for POST, PUT, PATCH requests
+        if (['post', 'put', 'patch'].includes(config.method?.toLowerCase())) {
+            // If sending FormData (for files), let browser set correct content type
+            if (config.data instanceof FormData) {
+                delete config.headers['Content-Type'];
+            } 
+            // For regular JSON data, ensure it's properly formatted
+            else if (config.data && typeof config.data === 'object') {
+                config.headers['Content-Type'] = 'application/json';
+                // config.data is already handled by axios
+            }
+        }
+        
         return config;
     },
     (error) => {

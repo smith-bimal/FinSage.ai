@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, TrendingUp, TrendingDown, Calendar, DollarSign, BarChart3, Clock, Trash2 } from 'lucide-react';

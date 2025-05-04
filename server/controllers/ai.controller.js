@@ -3,10 +3,8 @@ import { generateGeminiRecommendations } from '../services/AI/ai.service.js';
 
 export const generateRecommendations = async (req, res) => {
   try {
-    const { userId } = req.body;
-
     // Generate AI recommendations
-    const { recommendations, analysis, retrospective, results, chartData, generatedInsights } = await generateGeminiRecommendations(userId);
+    const { recommendations, analysis, retrospective, results, chartData, generatedInsights } = await generateGeminiRecommendations(req.body);
 
     // Update or create a new simulation with the generated data
     const simulation = await Simulation.findOneAndUpdate(

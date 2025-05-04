@@ -6,19 +6,14 @@ import { FinancialHistory } from '../../models/financial.history.model.js';
 import { calculateSpendingTrends } from '../../utils/behavior.helper.js';
 import { generateAIContent } from '../../helpers/gemini.helper.js';
 
-export async function generateGeminiRecommendations(userId) {
+export async function generateGeminiRecommendations(data) {
   try {
-    const financialData = await Financial.findOne({ userId });
-    if (!financialData) {
-      throw new Error('Financial data not found');
-    }
-
-    const spendingTrends = calculateSpendingTrends(financialData.expenses);
-    const monthlyIncome = Number(financialData.income) || 0;
-    const currentSavings = Number(financialData.savings) || 0;
+    const spendingTrends = calculateSpendingTrends(data.expenses);
+    const monthlyIncome = Number(data.income) || 0;
+    const currentSavings = Number(data.savings) || 0;
 
     // Add investment calculations
-    const investments = financialData.investments || [];
+    const investments = data.investments || [];
     const totalInvestments = investments.reduce((total, inv) => total + Number(inv.amount), 0);
     const investmentReturns = investments.map(inv => ({
       type: inv.type,
@@ -138,15 +133,15 @@ function getExpectedReturn(investmentType) {
   return returnRates[investmentType.toLowerCase()] || returnRates.others;
 }
 
-export async function analyzeBehaviorGemini(userId, simulationId = null) {
+export async function analyzeBehaviorGemini(financeId, simulationId = null) {
   try {
-    const financialData = await Financial.findOne({ userId });
+    const financialData = await Financial.findById(financeId);
     if (!financialData) {
       throw new Error('Financial data not found');
     }
 
     // Check if a history record already exists for the user and simulation
-    const existingHistory = await FinancialHistory.findOne({ userId, simulationId });
+    const existingHistory = await FinancialHistory.findOne({ userId: financialData.userId, simulationId });
     if (existingHistory) {
       return existingHistory; // Return the existing history to avoid duplicates
     }
@@ -159,11 +154,7 @@ export async function analyzeBehaviorGemini(userId, simulationId = null) {
       .reduce((sum, inv) => sum + Number(inv.amount), 0);
     const totalExpenses = Object.values(spendingTrends)
       .reduce((sum, exp) => sum + Number(exp), 0);
-
-    // Get historical records for backward analysis
-    const historicalRecords = await FinancialHistory.find({ userId })
-      .sort({ date: -1 })
-      .limit(6); // Get last 6 records for trend analysis
+    const historicalRecords = financialData.assets || [];
 
     const prompt = `
       Analyze the user's financial data:
@@ -173,10 +164,7 @@ export async function analyzeBehaviorGemini(userId, simulationId = null) {
       Monthly Expenses: ${totalExpenses}
       Expense Breakdown: ${JSON.stringify(spendingTrends)}
       
-      Historical Data: ${JSON.stringify(historicalRecords.map(record => ({
-      date: record.date,
-      data: record.data
-    })))}
+      Historical Data: ${historicalRecords}
 
       Generate analysis matching this structure:
       {
@@ -235,7 +223,7 @@ export async function analyzeBehaviorGemini(userId, simulationId = null) {
 
     // Create financial history record with all required fields
     const newHistory = await FinancialHistory.create({
-      userId,
+      userId: financialData.userId,
       simulationId,
       isComplete: true,
       pastDecisionsImpact: analysis.pastDecisionsImpact,

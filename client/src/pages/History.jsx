@@ -118,16 +118,17 @@ const History = () => {
           let prediction = "Neutral";
           if (item.recommendations && item.recommendations.length > 0) {
             const avgConfidence = item.recommendations.reduce((sum, rec) => sum + rec.confidenceScore, 0) / item.recommendations.length;
+            const savingPercent = revenue / income * 100;
             // Status: Extreme Fear, Fear, Neutral, Greed, Extreme Greed
-            if (avgConfidence <= 20) {
+            if (savingPercent <= 20) {
               marketSentiment = "Extreme Fear";
-            } else if (avgConfidence > 20 && avgConfidence <= 40) {
+            } else if (savingPercent > 20 && savingPercent <= 40) {
               marketSentiment = "Fear";
-            } else if (avgConfidence > 40 && avgConfidence <= 60) {
+            } else if (savingPercent > 40 && savingPercent <= 60) {
               marketSentiment = "Neutral";
-            } else if (avgConfidence > 60 && avgConfidence <= 80) {
+            } else if (savingPercent > 60 && savingPercent <= 80) {
               marketSentiment = "Greed";
-            } else if (avgConfidence > 80) {
+            } else if (savingPercent > 80) {
               marketSentiment = "Extreme Greed";
             }
             // Prediction: Bullish, Bearish, Neutral
@@ -144,10 +145,9 @@ const History = () => {
             id: item._id,
             name: item.title || `Simulation ${new Date(item.createdAt).toLocaleDateString()}`,
             date: new Date(item.createdAt).toISOString().split('T')[0],
-            thumbnail: item.thumbnail || "/images/default-thumbnail.png",
-            totalRevenue: `$${revenue.toLocaleString()}`,
-            income: `$${income.toLocaleString()}`,
-            expenses: `$${expenses.toLocaleString()}`,
+            totalRevenue: `₹${revenue.toLocaleString()}`,
+            income: `₹${income.toLocaleString()}`,
+            expenses: `₹${expenses.toLocaleString()}`,
             status: marketSentiment,
             prediction: prediction,
             accuracy: `${(item.recommendations?.[0]?.confidenceScore || 75)}%`
@@ -439,7 +439,7 @@ const History = () => {
             )}
 
             {!loading && !error && (
-              <Pagination 
+              <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
                 paginate={paginate}
@@ -447,7 +447,7 @@ const History = () => {
                 goToPreviousPage={goToPreviousPage}
               />
             )}
-            
+
             <div className="block lg:hidden mt-8">
               <ExportPanel />
             </div>
@@ -483,7 +483,7 @@ const History = () => {
       {/* Delete confirmation modal */}
       <AnimatePresence>
         {showDeleteModal && (
-          <DeleteConfirmationModal 
+          <DeleteConfirmationModal
             simulationToDelete={simulationToDelete}
             deleteLoading={deleteLoading}
             deleteError={deleteError}
@@ -496,7 +496,7 @@ const History = () => {
       {/* Mobile: Advanced Filter Modal */}
       <AnimatePresence>
         {showMobileAdvanced && (
-          <MobileFilterModal 
+          <MobileFilterModal
             showMobileAdvanced={showMobileAdvanced}
             setShowMobileAdvanced={setShowMobileAdvanced}
             tempFilters={tempFilters}

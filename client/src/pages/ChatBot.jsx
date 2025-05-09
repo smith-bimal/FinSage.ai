@@ -131,12 +131,6 @@ const ChatBot = ({ currentPage, userData }) => {
         parts: [{ text: msg.text }]
       }));
 
-      // Add the new user message
-      conversationHistory.push({
-        role: 'user',
-        parts: [{ text: input.trim() }]
-      });
-
       // Add context to prompt
       let contextPrompt = "You are FinSage, a helpful financial assistant. You only give short answers maximum 10 sentences.";
 
@@ -152,6 +146,12 @@ const ChatBot = ({ currentPage, userData }) => {
 
       const userPrompt = input.trim();
       const fullPrompt = `${contextPrompt}\n\nUser: ${userPrompt}`;
+      
+      // Add the new user message
+      conversationHistory.push({
+        role: 'user',
+        parts: [{ text: fullPrompt }]
+      });
 
       const result = await model.generateContent({
         contents: conversationHistory,

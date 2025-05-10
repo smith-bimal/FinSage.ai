@@ -17,7 +17,7 @@ import {
   X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link,useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import ChatBot from "../pages/ChatBot.jsx";
 
 const LandingPage = () => {
@@ -835,9 +835,7 @@ const LandingPage = () => {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
             <div className="col-span-2">
               <div className="flex items-center mb-4">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center">
-                  <Cpu className="h-4 w-4 text-white" />
-                </div>
+                <img src="logo.png" alt="" className="w-10 h-10" />
                 <span className="text-white text-lg font-bold ml-2">
                   Fin<span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Sage.ai</span>
                 </span>
@@ -915,7 +913,7 @@ const LandingPage = () => {
             </div>
           </div>
         </div>
-        <ChatBot/>
+        <ChatBot />
       </footer>
     </motion.div>
   );

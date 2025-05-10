@@ -47,8 +47,6 @@ FinSage.ai/
 │ ├─ routes/
 │ ├─ services/
 │ │ ├─ AI/
-│ │ │ ├─ handlers/
-│ │ ├─ simulation/
 │ ├─ utils/
 ```
 
